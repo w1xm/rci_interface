@@ -1,7 +1,18 @@
-#define PORT_WRITE_HIGH PORTD
-#define PORT_WRITE_LOW PORTC
-#define PORT_READ_HIGH PORTF
-#define PORT_READ_LOW PORTB
+#define WRITE_HIGH D
+#define WRITE_LOW C
+#define READ_HIGH F
+#define READ_LOW B
+
+#define PORT_WRITE_HIGH _CONCATENATE(PORT, WRITE_HIGH)
+#define DDR_WRITE_HIGH _CONCATENATE(DDR, WRITE_HIGH)
+#define PORT_WRITE_LOW _CONCATENATE(PORT, WRITE_LOW)
+#define DDR_WRITE_LOW _CONCATENATE(DDR, WRITE_LOW)
+#define PORT_READ_HIGH _CONCATENATE(PORT, READ_HIGH)
+#define DDR_READ_HIGH _CONCATENATE(DDR, READ_HIGH)
+#define PORT_READ_LOW _CONCATENATE(PORT, READ_LOW)
+#define DDR_READ_LOW _CONCATENATE(DDR, READ_LOW)
+#define _CONCATENATE(reg, letter) _XCONCATENATE(reg, letter)
+#define _XCONCATENATE(reg, letter) (reg ## letter)
 
 #define PIN_HREQ PIN_E0
 #define PIN_HREQ_ACTIVE LOW
@@ -29,9 +40,9 @@ void setup() {
   memset(buf, 0, sizeof(buf));
   Serial.begin(9600);
   // Set read ports to inputs
-  PINB = PINF = 0x00;
+  DDR_READ_HIGH = DDR_READ_LOW = 0x00;
   // Set write ports to outputs
-  PINC = PIND = 0xFF;
+  DDR_WRITE_HIGH = DDR_WRITE_LOW = 0xFF;
   pinMode(PIN_HREQ, OUTPUT);
   pinMode(PIN_HACK, INPUT);
   pinMode(PIN_HCTL, OUTPUT);
