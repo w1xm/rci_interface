@@ -28,7 +28,7 @@
 #define PIN_HREAD_WRITE HIGH
 
 // Milliseconds to wait for HACK
-#define TIMEOUT 1000
+#define TIMEOUT 100
 
 // We need at least 55; 10 registers * (4 num bytes + 1 space byte) + 1 address byte + 1 space + 1 carriage return + 1 newline + 1 null
 char buf[82];
@@ -54,7 +54,7 @@ void setup() {
 }
 
 void toggleHctl() {
-  hctl ^= HIGH;
+  hctl ^= 1;
   digitalWrite(PIN_HCTL, hctl);
 }
 
@@ -110,6 +110,7 @@ void loop() {
       bufPtr = buf;
     }
   }
+  delayMicroseconds(500);
   unsigned long start = millis();
   digitalWrite(PIN_HREAD, PIN_HREAD_READ);
   // Toggle HCTL to reset address
