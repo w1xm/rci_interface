@@ -58,7 +58,6 @@ void setup() {
 void toggleHctl() {
   hctl ^= 1;
   digitalWrite(PIN_HCTL, hctl);
-  //delay(1);
 }
 
 void doWrite() {
@@ -74,14 +73,8 @@ void doWrite() {
   Serial.print("\n");
   char* endPtr = NULL;
   long address = strtol(bufPtr, &endPtr, 16);
-  Serial.print("\n! Writing to address ");
-  Serial.print(address, HEX);
-  Serial.print("remaining line: ");
-  Serial.print(endPtr);
-  Serial.print("\n");
   // Toggle HCTL to reset address
   digitalWrite(PIN_HREAD, PIN_HREAD_WRITE);
-  delayMicroseconds(100);
   toggleHctl();
   writeWord(address);
   while (true) {
@@ -97,14 +90,9 @@ void doWrite() {
 }
 
 bool writeWord(long word) {
-  Serial.write("! Write word ");
-  Serial.print(word, HEX);
-  Serial.print("\n");
   unsigned long start = millis();
   PORT_WRITE_LOW = word & 0xFF;
   PORT_WRITE_HIGH = (word >> 8) & 0xFF;
-  delay(1);
-  delayMicroseconds(100);
   // Assert HREQ
   digitalWrite(PIN_HREQ, PIN_HREQ_ACTIVE);
   // Wait for HACK
@@ -114,7 +102,6 @@ bool writeWord(long word) {
     Serial.print("\n! Write timed out waiting for HACK to become active\n");
     return false;
   }
-  delay(1);
   // Deassert HREQ
   digitalWrite(PIN_HREQ, PIN_HREQ_INACTIVE);
   while (digitalRead(PIN_HACK) != PIN_HACK_INACTIVE && (millis() - start) < TIMEOUT);
@@ -122,7 +109,6 @@ bool writeWord(long word) {
     Serial.print("\n! Write timed out waiting for HACK to become inactive\n");
     return false;
   }
-  delay(1);
   return true;
 }
 
@@ -138,18 +124,14 @@ void loop() {
       memset(buf, 0, sizeof(buf));
     }
   }
-  //delayMicroseconds(500000);
-  delay(500);
+  delay(10);
   unsigned long start = millis();
   digitalWrite(PIN_HREAD, PIN_HREAD_READ);
-  delayMicroseconds(100);
   // Toggle HCTL to reset address
   toggleHctl();
   for (int i = 0; i < 12; i++) {
     // Assert HREQ
     digitalWrite(PIN_HREQ, PIN_HREQ_ACTIVE);
-    //delay(1);
-    //delayMicroseconds(100);
     // Wait for HACK
     while (digitalRead(PIN_HACK) != PIN_HACK_ACTIVE && (millis() - start) < TIMEOUT);
     if ((millis() - start) >= TIMEOUT) {
@@ -157,8 +139,6 @@ void loop() {
       Serial.print("\n! Read timed out waiting for HACK to become active\n");
       return;
     }
-    //delay(1);
-    //delayMicroseconds(100);
     Serial.print(PIN_READ_HIGH, HEX);
     Serial.print(' ');
     Serial.print(PIN_READ_LOW, HEX);
@@ -170,8 +150,6 @@ void loop() {
       return;
     }
     Serial.print(' ');
-    //delay(1);
-    //delayMicroseconds(100);
   }
   Serial.print('\n');
   Serial.send_now();
