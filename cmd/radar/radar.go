@@ -12,7 +12,8 @@ import (
 )
 
 var (
-	staticDir = flag.String("static_dir", "static", "directory containing static files")
+	staticDir  = flag.String("static_dir", "static", "directory containing static files")
+	serialPort = flag.String("serial", "", "serial port name")
 )
 
 var upgrader = websocket.Upgrader{
@@ -24,31 +25,6 @@ var upgrader = websocket.Upgrader{
 type Command struct {
 	Register uint16 `json:"register"`
 	Value    int16  `json:"value"`
-}
-
-type Status struct {
-	Registers [12]int16
-	Diag      int16
-	// AzPos and ElPos are in decimal degrees.
-	// They are calculated as 360*(reg/65536).
-	AzPos double
-	ElPos double
-	// AzVel and ElVel are in RPM.
-	// Positive indicates clockwise.
-	// They are calculated as 60*(reg/65536).
-	AzVel double
-	ElVel double
-	// Status contains the 48 status inputs.
-	Status [48]bool
-	// These are flags.
-	LocalMode       bool
-	MaintenanceMode bool
-	ElevationLower  bool
-	ElevationUpper  bool
-	Simulator       bool
-	BadCommand      bool
-	HostOkay        bool
-	ShutdownError   uint8
 }
 
 func StatusSocket(w http.ResponseWriter, r *http.Request) {
