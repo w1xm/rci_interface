@@ -139,9 +139,9 @@ void loop() {
       Serial.print("\n! Read timed out waiting for HACK to become active\n");
       return;
     }
-    Serial.print(PIN_READ_HIGH, HEX);
-    Serial.print(' ');
-    Serial.print(PIN_READ_LOW, HEX);
+    long word = PIN_READ_LOW;
+    word |= (PIN_READ_HIGH << 8)
+    Serial.print(word, HEX);
     // Deassert HREQ
     digitalWrite(PIN_HREQ, PIN_HREQ_INACTIVE);
     while (digitalRead(PIN_HACK) != PIN_HACK_INACTIVE && (millis() - start) < TIMEOUT);
