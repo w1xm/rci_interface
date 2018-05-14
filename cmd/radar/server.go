@@ -13,9 +13,10 @@ import (
 )
 
 type Server struct {
-	place *novas.Place
-	mu    sync.Mutex
-	r     *rci.RCI
+	place  *novas.Place
+	mu     sync.Mutex
+	r      *rci.RCI
+	bodies []*novas.Body
 
 	statusMu   sync.RWMutex
 	statusCond *sync.Cond
@@ -30,6 +31,17 @@ func NewServer(ctx context.Context, port string, place *novas.Place) (*Server, e
 		return nil, err
 	}
 	s.r = r
+	s.bodies = []*novas.Body{
+		novas.Sun(),
+		novas.Moon(),
+		novas.Mercury(),
+		novas.Venus(),
+		novas.Mars(),
+		novas.Jupiter(),
+		novas.Saturn(),
+		novas.Uranus(),
+		novas.Neptune(),
+	}
 	return s, nil
 }
 
