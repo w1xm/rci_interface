@@ -107,16 +107,16 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 	s.statusMu.RUnlock()
 	send(status)
 
+	s.statusMu.RLock()
+	defer s.statusMu.RUnlock()
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
 		}
-		s.statusMu.RLock()
 		s.statusCond.Wait()
 		status := s.status
-		s.statusMu.RUnlock()
 		send(status)
 	}
 }
