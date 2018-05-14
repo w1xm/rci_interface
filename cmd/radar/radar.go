@@ -9,23 +9,27 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/w1xm/rci_interface/rci"
+	"github.com/pebbe/novas"
 )
 
 var (
-	staticDir  = flag.String("static_dir", "static", "directory containing static files")
-	serialPort = flag.String("serial", "", "serial port name")
+	staticDir   = flag.String("static_dir", "static", "directory containing static files")
+	serialPort  = flag.String("serial", "", "serial port name")
+	latitude    = flag.Float64("latitude", 42.360326, "latitude of antenna")
+	longitude   = flag.Float64("longitude", -71.089324, "longitude of antenna")
+	height      = flag.Float64("height", 100, "height of antenna (meters)")
+	temperature = flag.Float64("temperature", 15, "temperature (celsius)")
+	pressure    = flag.Float64("pressure", 1010, "pressure (millibars)")
 )
 
 func main() {
 	flag.Parse()
 	ctx := context.Background()
-	server := NewServer()
-	ri, err := rci.Connect(ctx, *serialPort, server.statusCallback)
+	place := novas.NewPlace(*latitude, *longitude, *height, *temperature, *pressure)
+	server, err := NewServer(ctx, *serialPort, place)
 	if err != nil {
 		log.Fatal(err)
 	}
-	server.r = ri
 	r := mux.NewRouter()
 	r.Handle("/api/status", http.HandlerFunc(server.StatusHandler))
 	r.Handle("/api/ws", http.HandlerFunc(server.StatusSocketHandler))

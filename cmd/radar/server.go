@@ -8,22 +8,29 @@ import (
 	"sync"
 
 	"github.com/gorilla/websocket"
+	"github.com/pebbe/novas"
 	"github.com/w1xm/rci_interface/rci"
 )
 
 type Server struct {
-	mu sync.Mutex
-	r  *rci.RCI
+	place *novas.Place
+	mu    sync.Mutex
+	r     *rci.RCI
 
 	statusMu   sync.RWMutex
 	statusCond *sync.Cond
 	status     rci.Status
 }
 
-func NewServer() *Server {
-	s := &Server{}
+func NewServer(ctx context.Context, port string, place *novas.Place) (*Server, error) {
+	s := &Server{place: place}
 	s.statusCond = sync.NewCond(s.statusMu.RLocker())
-	return s
+	r, err := rci.Connect(ctx, *serialPort, s.statusCallback)
+	if err != nil {
+		return nil, err
+	}
+	s.r = r
+	return s, nil
 }
 
 var upgrader = websocket.Upgrader{
