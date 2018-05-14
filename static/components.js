@@ -1,4 +1,27 @@
-angular.module('components', [])
+angular.module('components', [
+    'ngWebSocket',
+])
+    .factory('RCI', function($websocket, $window) {
+	// Open a WebSocket connection
+	var socket = $websocket('ws://'+$window.location.host+'/api/ws');
+
+	var obj = {
+	    status: {},
+	    write: function(register, values) {
+		socket.send(JSON.stringify({
+		    action: 'write',
+		    register: register,
+		    values: values,
+		}));
+	    },
+	};
+
+	socket.onMessage(function(message) {
+            obj.status = JSON.parse(message.data);
+	});
+
+	return obj;
+    })
     .filter('bits', function() {
 	return function(input) {
 	    if (!input) {

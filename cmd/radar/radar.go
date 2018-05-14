@@ -31,9 +31,9 @@ func main() {
 	}
 	server.r = ri
 	r := mux.NewRouter()
-	r.PathPrefix("/").Handler(http.FileServer(http.Dir(*staticDir)))
 	r.Handle("/api/status", http.HandlerFunc(server.StatusHandler))
 	r.Handle("/api/ws", http.HandlerFunc(server.StatusSocketHandler))
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir(*staticDir)))
 	srv := &http.Server{
 		Handler:      r,
 		Addr:         "127.0.0.1:8502",
