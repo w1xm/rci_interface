@@ -1,0 +1,28 @@
+<!doctype html>
+<html ng-app="app">
+  <head>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+    <script src="components.js"></script>
+    <script src="app.js"></script>
+  </head>
+  <body>
+    <section>
+      <table>
+	<tr><th>Diag</th><td>{{status.Diag}}</td></tr>
+	<tr><th>Azimuth</th><td>{{status.AzPos}}° {{status.AzVel}} RPM</td></tr>
+	<tr><th>Elevation</th><td>{{status.ElPos}}° {{status.AzVel}} RPM</td></tr>
+	<tr><th>In</th><td>{{status.Registers | bits}}</td></tr>
+	<tr><th>Mode</th><td><ul>
+	      <li ng-show="{{status.LocalMode}}">Local Mode</li>
+	      <li ng-show="{{status.MaintenanceMode}}">Maintenance Mode</li>
+	      <li ng-show="{{status.ElevationLower}}">Elevation Lower</li>
+	      <li ng-show="{{status.ElevationUpper}}">Elevation Upper</li>
+	      <li ng-show="{{status.Simulator}}">Simulator</li>
+	      <li ng-show="{{status.BadCommand}}">Bad Command</li>
+	      <li ng-show="{{status.HostOkay}}">Host Okay</li>
+	      <li ng-show="{{status.ShutdownError}}">Shutdown {{status.ShutdownError}}</li>
+	</ul></td></tr>
+      </table>
+    </section>
+  </body>
+</html>
