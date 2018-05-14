@@ -5,13 +5,22 @@
     <script src="https://cdn.rawgit.com/AngularClass/angular-websocket/v2.0.0/dist/angular-websocket.min.js"></script>
     <script src="components.js"></script>
     <script src="app.js"></script>
+    <link rel="stylesheet" href="app.css" />
   </head>
   <body>
     <section ng-controller="StatusController">
+      <svg width="1000" height="1000" xmlns="http://www.w3.org/2000/svg" ng-click="setAzimuthPosition($event)" ng-mousemove="setAzimuthPosition($event)">
+	<image href="map.jpg" />
+	<line x1="500" y1="500" x2="500" y2="-500" transform="rotate({{rci.status.AzPos}} 500 500)" stroke="black" stroke-width="2" />
+	<line x1="500" y1="500" x2="500" y2="-500" transform="rotate({{rci.status.CommandAzPos}} 500 500)" stroke="red" />
+      </svg>
+    </section>
+    <section ng-controller="StatusController">
       <table>
+	<tr><th colspan="2">Status</th></tr>
 	<tr><th>Diag</th><td>{{rci.status.Diag}}</td></tr>
-	<tr><th>Azimuth</th><td>{{rci.status.AzPos}}° {{rci.status.AzVel}} RPM</td></tr>
-	<tr><th>Elevation</th><td>{{rci.status.ElPos}}° {{rci.status.AzVel}} RPM</td></tr>
+	<tr><th>Azimuth</th><td>{{rci.status.AzPos}}° {{rci.status.AzVel}} °/s</td></tr>
+	<tr><th>Elevation</th><td>{{rci.status.ElPos}}° {{rci.status.AzVel}} °/s</td></tr>
 	<tr><th>In</th><td>{{rci.status.Registers | bits}}</td></tr>
 	<tr><th>Mode</th><td><ul>
 	      <li ng-show="{{rci.status.LocalMode}}">Local Mode</li>
@@ -23,6 +32,12 @@
 	      <li ng-show="{{rci.status.HostOkay}}">Host Okay</li>
 	      <li ng-show="{{rci.status.ShutdownError}}">Shutdown {{rci.status.ShutdownError}}</li>
 	</ul></td></tr>
+
+	<tr><th colspan="2">Command</th></tr>
+	<tr><th>Diag</th><td>{{rci.status.CommandDiag}}</td></tr>
+	<tr><th>Azimuth</th><td>{{rci.status.CommandAzFlags}} {{rci.status.CommandAzPos}}° {{rci.status.CommandAzVel}} °/s</td></tr>
+	<tr><th>Elevation</th><td>{{rci.status.CommandElFlags}} {{rci.status.CommandElPos}}° {{rci.status.CommandAzVel}} °/s</td></tr>
+	<tr><td></td><td><button ng-click="rci.stop()">STOP</button></tr>
       </table>
     </section>
   </body>

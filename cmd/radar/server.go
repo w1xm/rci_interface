@@ -111,6 +111,7 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 		select {
 		case <-ctx.Done():
 			return
+		default:
 		}
 		s.statusMu.RLock()
 		s.statusCond.Wait()

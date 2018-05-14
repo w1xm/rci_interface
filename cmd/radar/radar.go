@@ -5,6 +5,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -28,6 +29,7 @@ func main() {
 	r := mux.NewRouter()
 	r.Handle("/api/status", http.HandlerFunc(server.StatusHandler))
 	r.Handle("/api/ws", http.HandlerFunc(server.StatusSocketHandler))
+	r.PathPrefix("/debug").Handler(http.DefaultServeMux)
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir(*staticDir)))
 	srv := &http.Server{
 		Handler:      r,

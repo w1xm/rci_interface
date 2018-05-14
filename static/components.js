@@ -26,6 +26,11 @@ angular.module('components', [
 		    position: position,
 		}));
 	    },
+	    stop: function() {
+		socket.send(JSON.stringify({
+		    command: 'stop',
+		}));
+	    },
 	};
 
 	socket.onMessage(function(message) {
