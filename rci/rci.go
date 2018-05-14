@@ -21,9 +21,9 @@ type Status struct {
 	// They are calculated as 360*(reg/65536).
 	AzPos float64
 	ElPos float64
-	// AzVel and ElVel are in RPM.
+	// AzVel and ElVel are in degrees/second.
 	// Positive indicates clockwise.
-	// They are calculated as 60*(reg/65536).
+	// They are calculated as 360*(reg/65536).
 	AzVel float64
 	ElVel float64
 	// Status contains the 48 status inputs.
@@ -37,28 +37,57 @@ type Status struct {
 	BadCommand      bool
 	HostOkay        bool
 	ShutdownError   uint8
+
+	WriteRegisters                 [11]uint16
+	CommandDiag                    uint16
+	CommandAzPos, CommandElPos     float64
+	CommandAzVel, CommandElVel     float64
+	CommandAzFlags, CommandElFlags string
+	CommandStatus                  [48]bool
 }
 
-func ParseRegisters(registers []uint16) Status {
-	var arr [12]uint16
-	for i, v := range registers {
-		if i >= len(arr) {
-			continue
-		}
-		arr[i] = v
+func regToSigned(reg uint16) float64 {
+	return 360 * float64(int16(reg)) / 65536
+}
+
+func regToFlags(reg uint16) string {
+	switch reg {
+	case 0:
+		return "NONE"
+	case 1:
+		return "POSITION"
+	case 2:
+		return "VELOCITY"
 	}
+	return "UNKNOWN"
+}
+
+func (r *RCI) parseRegisters() Status {
+	registers := r.readRegisters
 	status := Status{
-		RawRegisters: [12]uint16(arr),
+		RawRegisters: registers,
 		Diag:         registers[0],
 		RawAzPos:     int16(registers[1]),
 		RawElPos:     int16(registers[2]),
 		AzPos:        360 * float64(registers[1]) / 65536,
-		ElPos:        360 * float64(int16(registers[2])) / 65536,
-		AzVel:        60 * float64(registers[3]) / 65536,
-		ElVel:        60 * float64(registers[4]) / 65536,
+		ElPos:        regToSigned(registers[2]),
+		AzVel:        regToSigned(registers[3]),
+		ElVel:        regToSigned(registers[4]),
+
+		WriteRegisters: r.writeRegisters,
+		CommandDiag:    r.writeRegisters[0],
+		CommandAzPos:   360 * float64(r.writeRegisters[1]) / 65536,
+		CommandAzVel:   regToSigned(r.writeRegisters[2]),
+		CommandElPos:   360 * float64(r.writeRegisters[4]) / 65536,
+		CommandElVel:   regToSigned(r.writeRegisters[5]),
+		CommandAzFlags: regToFlags(r.writeRegisters[3]),
+		CommandElFlags: regToFlags(r.writeRegisters[6]),
 	}
 	for i := range status.Status {
 		status.Status[i] = ((registers[5+(i/8)] >> (uint(i) % 8)) & 1) == 1
+	}
+	for i := range status.CommandStatus {
+		status.CommandStatus[i] = ((r.writeRegisters[5+(i/8)] >> (uint(i) % 8)) & 1) == 1
 	}
 	flags := registers[8]
 	status.LocalMode = flags&1 != 0
@@ -78,6 +107,8 @@ type RCI struct {
 	s              *serial.Port
 	statusCallback StatusCallback
 	mu             sync.Mutex
+	readRegisters  [12]uint16
+	writeRegisters [11]uint16
 	lastDiag       uint16
 }
 
@@ -103,16 +134,16 @@ func (r *RCI) watch(ctx context.Context) {
 		case input[0] == '!':
 			log.Printf(input)
 		case len(input) > 0:
-			var registers []uint16
-			for _, word := range strings.Split(input, " ") {
-				i, err := strconv.ParseUint(word, 16, 16)
+			r.mu.Lock()
+			for i, word := range strings.Split(input, " ") {
+				v, err := strconv.ParseUint(word, 16, 16)
 				if err != nil {
 					log.Printf("failed to parse %q: %v", input, err)
 				}
-				registers = append(registers, uint16(i))
+				r.readRegisters[i] = uint16(v)
 			}
-			status := ParseRegisters(registers)
-			r.statusCallback(status)
+			r.notifyStatus()
+			r.mu.Unlock()
 		}
 		if err := scanner.Err(); err != nil {
 			log.Printf("reading serial port:", err)
@@ -120,9 +151,17 @@ func (r *RCI) watch(ctx context.Context) {
 	}
 }
 
+func (r *RCI) notifyStatus() {
+	status := r.parseRegisters()
+	r.statusCallback(status)
+}
+
 func (r *RCI) Write(register int, values ...uint16) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	out := []string{fmt.Sprintf("%x", register)}
-	for _, v := range values {
+	for i, v := range values {
+		r.writeRegisters[register+i] = v
 		out = append(out, fmt.Sprintf("%x", v))
 	}
 	outStr := "w" + strings.Join(out, " ")
@@ -130,6 +169,7 @@ func (r *RCI) Write(register int, values ...uint16) {
 	if _, err := r.s.Write([]byte(outStr)); err != nil {
 		log.Print(err)
 	}
+	r.notifyStatus()
 }
 
 const (

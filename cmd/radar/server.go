@@ -68,6 +68,7 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 		for {
 			var msg Command
 			if err := conn.ReadJSON(&msg); err != nil {
+				log.Printf("parsing json: %v", err)
 				cancel()
 				conn.Close()
 				break
@@ -82,6 +83,8 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 				s.r.SetElevationPosition(msg.Position)
 			case "stop":
 				s.r.Stop()
+			default:
+				log.Printf("Unknown command: %+v", msg)
 			}
 			s.mu.Unlock()
 		}
