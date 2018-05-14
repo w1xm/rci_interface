@@ -16,11 +16,6 @@ var (
 	serialPort = flag.String("serial", "", "serial port name")
 )
 
-type Command struct {
-	Register uint16 `json:"register"`
-	Value    int16  `json:"value"`
-}
-
 func main() {
 	flag.Parse()
 	ctx := context.Background()

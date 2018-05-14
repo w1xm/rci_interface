@@ -45,6 +45,14 @@ func (s *Server) StatusHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
+type Command struct {
+	Command  string  `json:"command"`
+	Register int     `json:"register"`
+	Value    uint16  `json:"value"`
+	Position float64 `json:"position"`
+	Velocity float64 `json:"velocity"`
+}
+
 func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	ctx, cancel := context.WithCancel(ctx)
@@ -64,7 +72,18 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 				conn.Close()
 				break
 			}
-			// Do thing
+			s.mu.Lock()
+			switch msg.Command {
+			case "write":
+				s.r.Write(msg.Register, msg.Value)
+			case "set_azimuth_position":
+				s.r.SetAzimuthPosition(msg.Position)
+			case "set_elevation_position":
+				s.r.SetElevationPosition(msg.Position)
+			case "stop":
+				s.r.Stop()
+			}
+			s.mu.Unlock()
 		}
 	}()
 

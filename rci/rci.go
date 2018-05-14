@@ -7,6 +7,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/tarm/serial"
 )
@@ -76,6 +77,8 @@ type StatusCallback func(status Status)
 type RCI struct {
 	s              *serial.Port
 	statusCallback StatusCallback
+	mu             sync.Mutex
+	lastDiag       uint16
 }
 
 func Connect(ctx context.Context, port string, statusCallback StatusCallback) (*RCI, error) {
@@ -85,7 +88,7 @@ func Connect(ctx context.Context, port string, statusCallback StatusCallback) (*
 	if err != nil {
 		return nil, err
 	}
-	r := &RCI{s, statusCallback}
+	r := &RCI{s: s, statusCallback: statusCallback}
 	go r.watch(ctx)
 	return r, nil
 }
@@ -117,12 +120,41 @@ func (r *RCI) watch(ctx context.Context) {
 	}
 }
 
-func (r *RCI) Write(register int, values []uint16) {
+func (r *RCI) Write(register int, values ...uint16) {
 	out := []string{fmt.Sprintf("%x", register)}
 	for _, v := range values {
 		out = append(out, fmt.Sprintf("%x", v))
 	}
-	if _, err := r.s.Write([]byte("w" + strings.Join(out, " "))); err != nil {
+	outStr := "w" + strings.Join(out, " ")
+	log.Printf("Writing: %s", outStr)
+	if _, err := r.s.Write([]byte(outStr)); err != nil {
 		log.Print(err)
 	}
+}
+
+const (
+	SERVO_NONE     uint16 = 0
+	SERVO_POSITION uint16 = 1
+	SERVO_VELOCITY uint16 = 2
+)
+
+func (r *RCI) Stop() {
+	r.lastDiag++
+	r.Write(0, r.lastDiag)
+	r.Write(3, SERVO_NONE)
+	r.Write(6, SERVO_NONE)
+}
+
+func (r *RCI) SetAzimuthPosition(angle float64) {
+	r.lastDiag++
+	r.Write(0, r.lastDiag)
+	r.Write(1, uint16(angle/360*65536))
+	r.Write(3, SERVO_POSITION)
+}
+
+func (r *RCI) SetElevationPosition(angle float64) {
+	r.lastDiag++
+	r.Write(0, r.lastDiag)
+	r.Write(4, uint16(angle/360*65536))
+	r.Write(6, SERVO_POSITION)
 }

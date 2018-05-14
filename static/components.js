@@ -9,9 +9,21 @@ angular.module('components', [
 	    status: {},
 	    write: function(register, values) {
 		socket.send(JSON.stringify({
-		    action: 'write',
+		    command: 'write',
 		    register: register,
 		    values: values,
+		}));
+	    },
+	    setAzimuthPosition: function(position) {
+		socket.send(JSON.stringify({
+		    command: 'set_azimuth_position',
+		    position: position,
+		}));
+	    },
+	    setElevationPosition: function(position) {
+		socket.send(JSON.stringify({
+		    command: 'set_elevation_position',
+		    position: position,
 		}));
 	    },
 	};
