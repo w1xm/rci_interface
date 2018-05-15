@@ -51,3 +51,11 @@ angular.module('components', [
 	    return out;
 	}
     })
+    .filter('deg', function() {
+	return function(input) {
+	    if (input===undefined) {
+		return '';
+	    }
+	    return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false }).format(input);
+	}
+    })

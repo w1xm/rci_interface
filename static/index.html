@@ -18,14 +18,14 @@
 	<g ng-click="mapClick($event)" ng-mousemove="$event.buttons && mapClick($event)">
 	  <image href="map.jpg" width="1000" height="1000" />
 	  <line x1="500" y1="500" x2="500" y2="-500" transform="rotate({{rci.status.AzPos}} 500 500)" stroke="black" stroke-width="2" />
-	  <line x1="500" y1="500" x2="500" y2="-500" transform="rotate({{rci.status.CommandAzPos}} 500 500)" stroke="red" />
+	  <line x1="500" y1="500" x2="500" y2="-500" class="{{rci.status.CommandAzFlags == 'POSITION'?'':'ng-hide'}}" transform="rotate({{rci.status.CommandAzPos}} 500 500)" stroke="red" />
 	</g>
 	<g ng-click="elClick($event)" ng-mousemove="$event.buttons && elClick($event)">
 	  <rect width="100" height="100" fill="white" />
 	  <g clip-path="url(#elClip)">
 	    <path d="M 10 10 L 10 90 L 90 90" fill="none" stroke="black" stroke-width="2"/>
 	    <line x1="10" x2="200" y1="90" y2="90" transform="rotate({{-rci.status.ElPos}} 10 90)" stroke="black" stroke-width="2" />
-	    <line x1="10" x2="200" y1="90" y2="90" transform="rotate({{-rci.status.CommandElPos}} 10 90)" stroke="red" />
+	    <line x1="10" x2="200" y1="90" y2="90" class="{{rci.status.CommandElFlags == 'POSITION'?'':'ng-hide'}}" transform="rotate({{-rci.status.CommandElPos}} 10 90)" stroke="red" />
 	  </g>
 	</g>
       </svg>
@@ -34,8 +34,8 @@
       <table>
 	<tr><th colspan="2">Status</th></tr>
 	<tr><th>Diag</th><td>{{rci.status.Diag}}</td></tr>
-	<tr><th>Azimuth</th><td>{{rci.status.AzPos}}° {{rci.status.AzVel}} °/s</td></tr>
-	<tr><th>Elevation</th><td>{{rci.status.ElPos}}° {{rci.status.AzVel}} °/s</td></tr>
+	<tr><th>Azimuth</th><td>{{rci.status.AzPos | deg}}° {{rci.status.AzVel}} °/s</td></tr>
+	<tr><th>Elevation</th><td>{{rci.status.ElPos | deg}}° {{rci.status.AzVel}} °/s</td></tr>
 	<tr><th>In</th><td>{{rci.status.Registers | bits}}</td></tr>
 	<tr><th>Mode</th><td><ul>
 	      <li ng-show="{{rci.status.LocalMode}}">Local Mode</li>
@@ -50,8 +50,8 @@
 
 	<tr><th colspan="2">Command</th></tr>
 	<tr><th>Diag</th><td>{{rci.status.CommandDiag}}</td></tr>
-	<tr><th>Azimuth</th><td>{{rci.status.CommandAzFlags}} {{rci.status.CommandAzPos}}° {{rci.status.CommandAzVel}} °/s</td></tr>
-	<tr><th>Elevation</th><td>{{rci.status.CommandElFlags}} {{rci.status.CommandElPos}}° {{rci.status.CommandAzVel}} °/s</td></tr>
+	<tr><th>Azimuth</th><td>{{rci.status.CommandAzFlags}} {{rci.status.CommandAzPos | deg}}° {{rci.status.CommandAzVel}} °/s</td></tr>
+	<tr><th>Elevation</th><td>{{rci.status.CommandElFlags}} {{rci.status.CommandElPos | deg}}° {{rci.status.CommandAzVel}} °/s</td></tr>
 	<tr><td></td><td><button ng-click="rci.stop()">STOP</button></tr>
       </table>
     </section>

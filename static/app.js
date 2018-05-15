@@ -12,7 +12,6 @@ angular.module('app', ['components'])
 	    if (angle < 0) { angle += 2*Math.PI; }
 	    angle = -angle;
 	    angle = 360*angle/(2*Math.PI);
-	    console.log($event.currentTarget, $event.offsetX, $event.offsetY, angle);
 	    $scope.rci.setAzimuthPosition(angle);
 	};
 	$scope.elClick = function($event) {
