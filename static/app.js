@@ -1,6 +1,10 @@
 angular.module('app', ['components'])
     .controller('StatusController', function($scope, $locale, RCI) {
 	$scope.rci = RCI;
+	$scope.trackBody = 0;
+	$scope.track = function() {
+	    $scope.rci.track($scope.trackBody);
+	};
     })
     .controller('MapController', function($scope) {
 	$scope.mapClick = function($event) {

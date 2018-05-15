@@ -90,7 +90,7 @@ func (s *Server) track(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(100 * time.Millisecond):
+		case <-time.After(250 * time.Millisecond):
 		}
 		s.mu.Lock()
 		s.statusMu.RLock()

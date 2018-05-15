@@ -54,6 +54,7 @@
 	<tr><th>Elevation</th><td>{{rci.status.CommandElFlags}} {{rci.status.CommandElPos | deg}}° {{rci.status.CommandAzVel}} °/s</td></tr>
 	<tr><th>Tracking</th><td>{{rci.status.Bodies[rci.status.CommandTrackingBody]}}</td></tr>
 	<tr><td></td><td><button ng-click="rci.stop()">STOP</button><button ng-click="rci.stopHard()">HARD STOP</button></tr>
+	<tr><th>Track</th><td><select ng-options="idx*1 as body for (idx, body) in rci.status.Bodies" ng-model="trackBody" ng-change="track()"></select></td></tr>
       </table>
     </section>
   </body>
