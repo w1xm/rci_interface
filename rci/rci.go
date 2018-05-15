@@ -198,3 +198,17 @@ func (r *RCI) SetElevationPosition(angle float64) {
 	r.Write(4, uint16(angle/360*65536))
 	r.Write(6, SERVO_POSITION)
 }
+
+func (r *RCI) SetAzimuthVelocity(angle float64) {
+	r.lastDiag++
+	r.Write(0, r.lastDiag)
+	r.Write(2, uint16(angle/360*65536))
+	r.Write(3, SERVO_VELOCITY)
+}
+
+func (r *RCI) SetElevationVelocity(angle float64) {
+	r.lastDiag++
+	r.Write(0, r.lastDiag)
+	r.Write(5, uint16(angle/360*65536))
+	r.Write(6, SERVO_VELOCITY)
+}

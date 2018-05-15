@@ -13,6 +13,12 @@ import (
 	"github.com/w1xm/rci_interface/rci"
 )
 
+type Status struct {
+	rci.Status
+	CommandTrackingBody int
+	Bodies              []string
+}
+
 type Server struct {
 	place  *novas.Place
 	mu     sync.Mutex
@@ -21,7 +27,7 @@ type Server struct {
 
 	statusMu   sync.RWMutex
 	statusCond *sync.Cond
-	status     rci.Status
+	status     Status
 }
 
 func NewServer(ctx context.Context, port string, place *novas.Place) (*Server, error) {
@@ -43,6 +49,11 @@ func NewServer(ctx context.Context, port string, place *novas.Place) (*Server, e
 		novas.Uranus(),
 		novas.Neptune(),
 	}
+	s.status.Bodies = []string{"NONE"}
+	for _, b := range s.bodies {
+		s.status.Bodies = append(s.status.Bodies, b.Name())
+	}
+	go s.track(ctx)
 	return s, nil
 }
 
@@ -71,6 +82,28 @@ type Command struct {
 	Value    uint16  `json:"value"`
 	Position float64 `json:"position"`
 	Velocity float64 `json:"velocity"`
+	Body     int     `json:"body"`
+}
+
+func (s *Server) track(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(100 * time.Millisecond):
+		}
+		s.mu.Lock()
+		s.statusMu.RLock()
+		command := s.status.CommandTrackingBody
+		s.statusMu.RUnlock()
+		if command > 0 && command < len(s.bodies) {
+			body := s.bodies[command-1]
+			topo := body.Topo(novas.Now(), s.place, novas.REFR_NONE)
+			s.r.SetAzimuthPosition(topo.Az)
+			s.r.SetElevationPosition(topo.Alt)
+		}
+		s.mu.Unlock()
+	}
 }
 
 func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
@@ -96,14 +129,23 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			s.mu.Lock()
 			switch msg.Command {
+			case "track":
+				s.status.CommandTrackingBody = msg.Body
 			case "write":
 				s.r.Write(msg.Register, msg.Value)
 			case "set_azimuth_position":
+				s.status.CommandTrackingBody = 0
 				s.r.SetAzimuthPosition(msg.Position)
 			case "set_elevation_position":
+				s.status.CommandTrackingBody = 0
 				s.r.SetElevationPosition(msg.Position)
 			case "stop":
+				s.status.CommandTrackingBody = 0
 				s.r.Stop()
+			case "stop_hard":
+				s.status.CommandTrackingBody = 0
+				s.r.SetAzimuthVelocity(0)
+				s.r.SetElevationVelocity(0)
 			default:
 				log.Printf("Unknown command: %+v", msg)
 			}
@@ -111,7 +153,7 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	send := func(status rci.Status) {
+	send := func(status Status) {
 		data, err := json.Marshal(status)
 		if err != nil {
 			log.Print(err)
@@ -165,6 +207,6 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) statusCallback(status rci.Status) {
 	s.statusMu.Lock()
 	defer s.statusMu.Unlock()
-	s.status = status
+	s.status.Status = status
 	s.statusCond.Broadcast()
 }

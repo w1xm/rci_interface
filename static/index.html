@@ -52,7 +52,8 @@
 	<tr><th>Diag</th><td>{{rci.status.CommandDiag}}</td></tr>
 	<tr><th>Azimuth</th><td>{{rci.status.CommandAzFlags}} {{rci.status.CommandAzPos | deg}}° {{rci.status.CommandAzVel}} °/s</td></tr>
 	<tr><th>Elevation</th><td>{{rci.status.CommandElFlags}} {{rci.status.CommandElPos | deg}}° {{rci.status.CommandAzVel}} °/s</td></tr>
-	<tr><td></td><td><button ng-click="rci.stop()">STOP</button></tr>
+	<tr><th>Tracking</th><td>{{rci.status.Bodies[rci.status.CommandTrackingBody]}}</td></tr>
+	<tr><td></td><td><button ng-click="rci.stop()">STOP</button><button ng-click="rci.stopHard()">HARD STOP</button></tr>
       </table>
     </section>
   </body>

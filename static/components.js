@@ -26,9 +26,20 @@ angular.module('components', [
 		    position: position,
 		}));
 	    },
+	    track: function(body) {
+		socket.send(JSON.stringify({
+		    command: 'track',
+		    body: body,
+		}));
+	    },
 	    stop: function() {
 		socket.send(JSON.stringify({
 		    command: 'stop',
+		}));
+	    },
+	    stopHard: function() {
+		socket.send(JSON.stringify({
+		    command: 'stop_hard',
 		}));
 	    },
 	};
