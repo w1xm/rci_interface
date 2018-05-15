@@ -13,6 +13,7 @@ import (
 )
 
 var (
+	addr        = flag.String("addr", "127.0.0.1:8502", "address to listen on")
 	staticDir   = flag.String("static_dir", "static", "directory containing static files")
 	serialPort  = flag.String("serial", "", "serial port name")
 	latitude    = flag.Float64("latitude", 42.360326, "latitude of antenna")
@@ -37,7 +38,7 @@ func main() {
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir(*staticDir)))
 	srv := &http.Server{
 		Handler:      r,
-		Addr:         "127.0.0.1:8502",
+		Addr:         *addr,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 	}
