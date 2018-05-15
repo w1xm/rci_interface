@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/pebbe/novas"
@@ -75,6 +76,7 @@ type Command struct {
 func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -126,17 +128,37 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 	s.statusMu.RUnlock()
 	send(status)
 
-	s.statusMu.RLock()
-	defer s.statusMu.RUnlock()
+	c := make(chan struct{}, 1)
+	go func() {
+		s.statusMu.RLock()
+		defer s.statusMu.RUnlock()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+			s.statusCond.Wait()
+			status = s.status
+			select {
+			case c <- struct{}{}:
+			default:
+			}
+		}
+	}()
+
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		default:
+		case <-c:
+			send(status)
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(25 * time.Millisecond):
+			}
 		}
-		s.statusCond.Wait()
-		status := s.status
-		send(status)
 	}
 }
 
