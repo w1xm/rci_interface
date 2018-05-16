@@ -38,6 +38,18 @@ angular.module('components', [
 		    velocity: velocity,
 		}));
 	    },
+	    setAzimuthOffset: function(position) {
+		socket.send(JSON.stringify({
+		    command: 'set_azimuth_offset',
+		    position: position,
+		}));
+	    },
+	    setElevationOffset: function(position) {
+		socket.send(JSON.stringify({
+		    command: 'set_elevation_offset',
+		    position: position,
+		}));
+	    },
 	    track: function(body) {
 		socket.send(JSON.stringify({
 		    command: 'track',
@@ -69,7 +81,7 @@ angular.module('components', [
 	    }
 	    var out = '';
 	    for (var i = 0; i < input.length; i++) {
-		out = int(input[i]) + out;
+		out = (1*input[i]) + out;
 	    }
 	    return out;
 	}

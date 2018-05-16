@@ -88,6 +88,7 @@ angular.module('widgets', [])
 
 		    function spin(direction) {
 			ngModelCtrl.$setViewValue(clamp(direction * scale + ngModelCtrl.$viewValue, direction));
+			ngModelCtrl.$render();
 		    }
 		    digit.addEventListener('wheel', event => {
 			// TODO: deal with high-res/accelerated scrolling
@@ -138,10 +139,12 @@ angular.module('widgets', [])
 			case '-':
 			case '_':
 			    ngModelCtrl.$setViewValue(-Math.abs(value));
+			    ngModelCtrl.$render();
 			    return;
 			case '+':
 			case '=':
 			    ngModelCtrl.$setViewValue(Math.abs(value));
+			    ngModelCtrl.$render();
 			    return;
 			case 'z':
 			case 'Z':
@@ -149,6 +152,7 @@ angular.module('widgets', [])
 			    // | 0 is used to round towards zero
 			    var zeroFactor = scale * 10;
 			    ngModelCtrl.$setViewValue(((value / zeroFactor) | 0) * zeroFactor);
+			    ngModelCtrl.$render();
 			    return;
 			default:
 			    break;
@@ -170,6 +174,7 @@ angular.module('widgets', [])
 			value += (input - currentDigitValue) * scale;
 			if (negative) { value = -value; }
 			ngModelCtrl.$setViewValue(clamp(value, 0));
+			ngModelCtrl.$render();
 
 			focusNext();
 			event.preventDefault();
@@ -222,6 +227,7 @@ angular.module('widgets', [])
 
 		ngModelCtrl.$render = function() {
 		    const value = ngModelCtrl.$viewValue;
+		    console.log('externally changed to', value);
 		    const active = angular.isDefined(scope.active) ? scope.active: true;
 		    let valueStr = new Intl.NumberFormat('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals, useGrouping: false }).format(value);
 		    if (valueStr === '0' && value === 0 && 1/value === -Infinity) {

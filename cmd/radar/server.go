@@ -17,12 +17,13 @@ type Status struct {
 	rci.Status
 	CommandTrackingBody int
 	Bodies              []string
+	OffsetAz, OffsetEl  float64
 }
 
 type Server struct {
 	place  *novas.Place
 	mu     sync.Mutex
-	r      *rci.RCI
+	r      *rci.Offset
 	bodies []*novas.Body
 
 	statusMu   sync.RWMutex
@@ -33,7 +34,7 @@ type Server struct {
 func NewServer(ctx context.Context, port string, place *novas.Place) (*Server, error) {
 	s := &Server{place: place}
 	s.statusCond = sync.NewCond(s.statusMu.RLocker())
-	r, err := rci.Connect(ctx, *serialPort, s.statusCallback)
+	r, err := rci.ConnectOffset(ctx, *serialPort, s.statusCallback, 0, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -152,6 +153,12 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 				s.status.CommandTrackingBody = 0
 				s.r.SetAzimuthVelocity(0)
 				s.r.SetElevationVelocity(0)
+			case "set_azimuth_offset":
+				s.status.OffsetAz = msg.Position
+				s.r.SetAzimuthOffset(s.status.OffsetAz)
+			case "set_elevation_offset":
+				s.status.OffsetEl = msg.Position
+				s.r.SetElevationOffset(s.status.OffsetEl)
 			default:
 				log.Printf("Unknown command: %+v", msg)
 			}

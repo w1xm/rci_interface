@@ -34,6 +34,7 @@
     <section ng-controller="StatusController">
       <table>
 	<tr><th colspan="2">Status</th></tr>
+	<tr><th>Raw</th><td>{{rci.status.RawRegisters}}</td></tr>
 	<tr><th>Diag</th><td>{{rci.status.Diag}}</td></tr>
 	<tr><th>Azimuth</th><td>
 	    <knob ng-model="rci.status.AzPos" unit="°"></knob><br />
@@ -43,7 +44,7 @@
 	    <knob ng-model="rci.status.ElPos" unit="°"></knob><br />
 	    <knob ng-model="rci.status.ElVel" unit="°/s"></knob>
 	</td></tr>
-	<tr><th>In</th><td>{{rci.status.Registers | bits}}</td></tr>
+	<tr><th>In</th><td>{{rci.status.Status | bits}}</td></tr>
 	<tr><th>Mode</th><td><ul>
 	      <li ng-show="{{rci.status.LocalMode}}">Local Mode</li>
 	      <li ng-show="{{rci.status.MaintenanceMode}}">Maintenance Mode</li>
@@ -66,9 +67,16 @@
 	    {{rci.status.CommandElFlags}}<br />
 	    <knob ng-model="rci.status.CommandElPos" unit="°" writable="true" min="0" max="360" wrap="true" ng-change="rci.setElevationPosition(rci.status.CommandElPos)" active="rci.status.CommandElFlags == 'POSITION'"></knob><br />
 	    <knob ng-model="rci.status.CommandElVel" unit="°/s" writable="true" min="-100" max="100" ng-change="rci.setElevationVelocity(rci.status.CommandElVel)" active="rci.status.CommandElFlags == 'VELOCITY'"></knob>
+	</td></tr>
 	<tr><th>Tracking</th><td>{{rci.status.Bodies[rci.status.CommandTrackingBody]}}</td></tr>
 	<tr><td></td><td><button ng-click="rci.stop()">STOP</button><button ng-click="rci.stopHard()">HARD STOP</button></tr>
 	<tr><th>Track</th><td><select ng-options="idx*1 as body for (idx, body) in rci.status.Bodies" ng-model="trackBody" ng-change="track()"></select></td></tr>
+	<tr><th>Azimuth Offset</th><td>
+	    <knob ng-model="rci.status.OffsetAz" unit="°" writable="true" min="-360" max="360" wrap="true" ng-change="rci.setAzimuthOffset(rci.status.OffsetAz)"></knob>
+	</td></tr>
+	<tr><th>Elevation Offset</th><td>
+	    <knob ng-model="rci.status.OffsetEl" unit="°" writable="true" min="-360" max="360" wrap="true" ng-change="rci.setElevationOffset(rci.status.OffsetEl)"></knob>
+	</td></tr>
       </table>
     </section>
   </body>
