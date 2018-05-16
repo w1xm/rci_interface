@@ -34,7 +34,7 @@
     <section ng-controller="StatusController">
       <table>
 	<tr><th colspan="2">Status</th></tr>
-	<tr><th>Raw</th><td>{{rci.status.RawRegisters}}</td></tr>
+	<tr><th>Raw</th><td>{{rci.status.RawRegisters | hex}}</td></tr>
 	<tr><th>Diag</th><td>{{rci.status.Diag}}</td></tr>
 	<tr><th>Azimuth</th><td>
 	    <knob ng-model="rci.status.AzPos" unit="°"></knob><br />
@@ -57,7 +57,7 @@
 	</ul></td></tr>
 
 	<tr><th colspan="2">Command</th></tr>
-	<tr><th>Raw</th><td>{{rci.status.WriteRegisters}}</td></tr>
+	<tr><th>Raw</th><td>{{rci.status.WriteRegisters | hex}}</td></tr>
 	<tr><th>Diag</th><td>{{rci.status.CommandDiag}}</td></tr>
 	<tr><th>Azimuth</th><td>
 	    {{rci.status.CommandAzFlags}}<br />

@@ -94,3 +94,15 @@ angular.module('components', [
 	    return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false }).format(input);
 	}
     })
+    .filter('hex', function() {
+	let f = function(input) {
+	    if (input===undefined) {
+		return '';
+	    }
+	    if (input.length) {
+		return '['+input.map(f).join(', ')+']'
+	    }
+	    return input.toString(16);
+	};
+	return f;
+    })
