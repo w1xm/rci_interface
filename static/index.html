@@ -35,8 +35,14 @@
       <table>
 	<tr><th colspan="2">Status</th></tr>
 	<tr><th>Diag</th><td>{{rci.status.Diag}}</td></tr>
-	<tr><th>Azimuth</th><td>{{rci.status.AzPos | deg}}° {{rci.status.AzVel}} °/s</td></tr>
-	<tr><th>Elevation</th><td>{{rci.status.ElPos | deg}}° {{rci.status.AzVel}} °/s</td></tr>
+	<tr><th>Azimuth</th><td>
+	    <knob ng-model="rci.status.AzPos" unit="°"></knob><br />
+	    <knob ng-model="rci.status.AzVel" unit="°/s"></knob>
+	</td></tr>
+	<tr><th>Elevation</th><td>
+	    <knob ng-model="rci.status.ElPos" unit="°"></knob><br />
+	    <knob ng-model="rci.status.ElVel" unit="°/s"></knob>
+	</td></tr>
 	<tr><th>In</th><td>{{rci.status.Registers | bits}}</td></tr>
 	<tr><th>Mode</th><td><ul>
 	      <li ng-show="{{rci.status.LocalMode}}">Local Mode</li>
@@ -56,7 +62,10 @@
 	    <knob ng-model="rci.status.CommandAzPos" unit="°" writable="true" min="0" max="360" wrap="true" ng-change="rci.setAzimuthPosition(rci.status.CommandAzPos)"></knob><br />
 	    <knob ng-model="rci.status.CommandAzVel" unit="°/s" writable="true" min="-100" max="100" ng-change="rci.setAzimuthVelocity(rci.status.CommandAzVel)"></knob>
 	</td></tr>
-	<tr><th>Elevation</th><td>{{rci.status.CommandElFlags}} {{rci.status.CommandElPos | deg}}° {{rci.status.CommandElVel}} °/s</td></tr>
+	<tr><th>Elevation</th><td>
+	    {{rci.status.CommandElFlags}}<br />
+	    <knob ng-model="rci.status.CommandElPos" unit="°" writable="true" min="0" max="360" wrap="true" ng-change="rci.setElevationPosition(rci.status.CommandElPos)"></knob><br />
+	    <knob ng-model="rci.status.CommandElVel" unit="°/s" writable="true" min="-100" max="100" ng-change="rci.setElevationVelocity(rci.status.CommandElVel)"></knob>
 	<tr><th>Tracking</th><td>{{rci.status.Bodies[rci.status.CommandTrackingBody]}}</td></tr>
 	<tr><td></td><td><button ng-click="rci.stop()">STOP</button><button ng-click="rci.stopHard()">HARD STOP</button></tr>
 	<tr><th>Track</th><td><select ng-options="idx*1 as body for (idx, body) in rci.status.Bodies" ng-model="trackBody" ng-change="track()"></select></td></tr>

@@ -1,4 +1,17 @@
 angular.module('widgets', [])
+    .directive('posvel', function() {
+	return {
+	    templateUrl: 'posvel.html',
+	    scope: {
+		'flags': '<',
+		'pos': '<',
+		'vel': '<',
+		'onPos': '&',
+		'onVel': '&',
+		'writable': '<',
+	    }
+	};
+    })
     .directive('knob', function() {
 	return {
 	    template: '',
@@ -203,7 +216,6 @@ angular.module('widgets', [])
 
 		ngModelCtrl.$render = function() {
 		    const value = ngModelCtrl.$viewValue;
-		    console.log('value changed remotely', value);
 		    let valueStr = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false }).format(value);
 		    if (valueStr === '0' && value === 0 && 1/value === -Infinity) {
 			// allow user to see progress in entering negative values
