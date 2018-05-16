@@ -26,6 +26,18 @@ angular.module('components', [
 		    position: position,
 		}));
 	    },
+	    setAzimuthVelocity: function(velocity) {
+		socket.send(JSON.stringify({
+		    command: 'set_azimuth_velocity',
+		    velocity: velocity,
+		}));
+	    },
+	    setElevationVelocity: function(velocity) {
+		socket.send(JSON.stringify({
+		    command: 'set_elevation_velocity',
+		    velocity: velocity,
+		}));
+	    },
 	    track: function(body) {
 		socket.send(JSON.stringify({
 		    command: 'track',

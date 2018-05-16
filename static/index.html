@@ -4,6 +4,7 @@
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
     <script src="https://cdn.rawgit.com/AngularClass/angular-websocket/v2.0.0/dist/angular-websocket.min.js"></script>
     <script src="components.js"></script>
+    <script src="widgets.js"></script>
     <script src="app.js"></script>
     <link rel="stylesheet" href="app.css" />
   </head>
@@ -50,8 +51,12 @@
 
 	<tr><th colspan="2">Command</th></tr>
 	<tr><th>Diag</th><td>{{rci.status.CommandDiag}}</td></tr>
-	<tr><th>Azimuth</th><td>{{rci.status.CommandAzFlags}} {{rci.status.CommandAzPos | deg}}° {{rci.status.CommandAzVel}} °/s</td></tr>
-	<tr><th>Elevation</th><td>{{rci.status.CommandElFlags}} {{rci.status.CommandElPos | deg}}° {{rci.status.CommandAzVel}} °/s</td></tr>
+	<tr><th>Azimuth</th><td>
+	    {{rci.status.CommandAzFlags}}<br />
+	    <knob ng-model="rci.status.CommandAzPos" unit="°" writable="true" min="0" max="360" wrap="true" ng-change="rci.setAzimuthPosition(rci.status.CommandAzPos)"></knob><br />
+	    <knob ng-model="rci.status.CommandAzVel" unit="°/s" writable="true" min="-100" max="100" ng-change="rci.setAzimuthVelocity(rci.status.CommandAzVel)"></knob>
+	</td></tr>
+	<tr><th>Elevation</th><td>{{rci.status.CommandElFlags}} {{rci.status.CommandElPos | deg}}° {{rci.status.CommandElVel}} °/s</td></tr>
 	<tr><th>Tracking</th><td>{{rci.status.Bodies[rci.status.CommandTrackingBody]}}</td></tr>
 	<tr><td></td><td><button ng-click="rci.stop()">STOP</button><button ng-click="rci.stopHard()">HARD STOP</button></tr>
 	<tr><th>Track</th><td><select ng-options="idx*1 as body for (idx, body) in rci.status.Bodies" ng-model="trackBody" ng-change="track()"></select></td></tr>

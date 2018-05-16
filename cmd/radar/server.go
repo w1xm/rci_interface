@@ -139,6 +139,12 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 			case "set_elevation_position":
 				s.status.CommandTrackingBody = 0
 				s.r.SetElevationPosition(msg.Position)
+			case "set_azimuth_velocity":
+				s.status.CommandTrackingBody = 0
+				s.r.SetAzimuthVelocity(msg.Velocity)
+			case "set_elevation_velocity":
+				s.status.CommandTrackingBody = 0
+				s.r.SetElevationVelocity(msg.Velocity)
 			case "stop":
 				s.status.CommandTrackingBody = 0
 				s.r.Stop()

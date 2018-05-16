@@ -1,4 +1,4 @@
-angular.module('app', ['components'])
+angular.module('app', ['components', 'widgets'])
     .controller('StatusController', function($scope, $locale, RCI) {
 	$scope.rci = RCI;
 	$scope.trackBody = 0;
