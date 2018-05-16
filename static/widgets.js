@@ -29,6 +29,8 @@ angular.module('widgets', [])
 	    link: function(scope, element, attrs, ngModelCtrl) {
 		const writable = scope.writable;
 
+		const decimals = 3;
+
 		// TODO: use integer flag of RangeT, w decimal points?
 		function clamp(value, direction) {
 		    if (scope.wrap) {
@@ -205,8 +207,8 @@ angular.module('widgets', [])
 		    });
 		}
 
-		for (let i = 2; i >= -2; i--) {
-		    createPlace(i, i+2);
+		for (let i = 2; i >= -decimals; i--) {
+		    createPlace(i, i+decimals);
 		}
 
 		if (scope.unit) {
@@ -221,7 +223,7 @@ angular.module('widgets', [])
 		ngModelCtrl.$render = function() {
 		    const value = ngModelCtrl.$viewValue;
 		    const active = angular.isDefined(scope.active) ? scope.active: true;
-		    let valueStr = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false }).format(value);
+		    let valueStr = new Intl.NumberFormat('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals, useGrouping: false }).format(value);
 		    if (valueStr === '0' && value === 0 && 1/value === -Infinity) {
 			// allow user to see progress in entering negative values
 			valueStr = '-0';
