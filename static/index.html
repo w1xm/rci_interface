@@ -59,13 +59,13 @@
 	<tr><th>Diag</th><td>{{rci.status.CommandDiag}}</td></tr>
 	<tr><th>Azimuth</th><td>
 	    {{rci.status.CommandAzFlags}}<br />
-	    <knob ng-model="rci.status.CommandAzPos" unit="°" writable="true" min="0" max="360" wrap="true" ng-change="rci.setAzimuthPosition(rci.status.CommandAzPos)"></knob><br />
-	    <knob ng-model="rci.status.CommandAzVel" unit="°/s" writable="true" min="-100" max="100" ng-change="rci.setAzimuthVelocity(rci.status.CommandAzVel)"></knob>
+	    <knob ng-model="rci.status.CommandAzPos" unit="°" writable="true" min="0" max="360" wrap="true" ng-change="rci.setAzimuthPosition(rci.status.CommandAzPos)" active="rci.status.CommandAzFlags == 'POSITION'"></knob><br />
+	    <knob ng-model="rci.status.CommandAzVel" unit="°/s" writable="true" min="-100" max="100" ng-change="rci.setAzimuthVelocity(rci.status.CommandAzVel)" active="rci.status.CommandAzFlags == 'VELOCITY'"></knob>
 	</td></tr>
 	<tr><th>Elevation</th><td>
 	    {{rci.status.CommandElFlags}}<br />
-	    <knob ng-model="rci.status.CommandElPos" unit="°" writable="true" min="0" max="360" wrap="true" ng-change="rci.setElevationPosition(rci.status.CommandElPos)"></knob><br />
-	    <knob ng-model="rci.status.CommandElVel" unit="°/s" writable="true" min="-100" max="100" ng-change="rci.setElevationVelocity(rci.status.CommandElVel)"></knob>
+	    <knob ng-model="rci.status.CommandElPos" unit="°" writable="true" min="0" max="360" wrap="true" ng-change="rci.setElevationPosition(rci.status.CommandElPos)" active="rci.status.CommandElFlags == 'POSITION'"></knob><br />
+	    <knob ng-model="rci.status.CommandElVel" unit="°/s" writable="true" min="-100" max="100" ng-change="rci.setElevationVelocity(rci.status.CommandElVel)" active="rci.status.CommandElFlags == 'VELOCITY'"></knob>
 	<tr><th>Tracking</th><td>{{rci.status.Bodies[rci.status.CommandTrackingBody]}}</td></tr>
 	<tr><td></td><td><button ng-click="rci.stop()">STOP</button><button ng-click="rci.stopHard()">HARD STOP</button></tr>
 	<tr><th>Track</th><td><select ng-options="idx*1 as body for (idx, body) in rci.status.Bodies" ng-model="trackBody" ng-change="track()"></select></td></tr>

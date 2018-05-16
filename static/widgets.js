@@ -23,6 +23,7 @@ angular.module('widgets', [])
 		'min': '<',
 		'wrap': '<',
 		'unit': '@',
+		'active': '<',
 	    },
 	    require: 'ngModel',
 	    link: function(scope, element, attrs, ngModelCtrl) {
@@ -56,6 +57,7 @@ angular.module('widgets', [])
 
 		const places = [];
 		const marks = [];
+		const fixedMarks = [];
 		function createPlace(i, idx) {
 		    if (i > 0 && i % 3 === 2 && places.length > 0) {
 			const mark = container.appendChild(document.createElement("span"));
@@ -70,6 +72,7 @@ angular.module('widgets', [])
 			mark.className = "knob-mark";
 			mark.textContent = ".";
 			//mark.style.visibility = "hidden";
+			fixedMarks.unshift(mark)
 		    }
 		    const digit = container.appendChild(document.createElement("span"));
 		    digit.className = "knob-digit";
@@ -210,12 +213,14 @@ angular.module('widgets', [])
 		    const mark = container.appendChild(document.createElement("span"));
 		    mark.className = "knob-mark";
 		    mark.textContent = scope.unit;
+		    fixedMarks.unshift(mark);
 		}
 
 		places[places.length - 1].element.tabIndex = 0; // initial tabbable digit
 
 		ngModelCtrl.$render = function() {
 		    const value = ngModelCtrl.$viewValue;
+		    const active = angular.isDefined(scope.active) ? scope.active: true;
 		    let valueStr = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false }).format(value);
 		    if (valueStr === '0' && value === 0 && 1/value === -Infinity) {
 			// allow user to see progress in entering negative values
@@ -226,13 +231,17 @@ angular.module('widgets', [])
 		    for (let i = 0; i < places.length; i++) {
 			const digit = valueStrDigits[last - i];
 			places[i].text.data = digit || '0';
-			places[i].element.classList[digit ? 'remove' : 'add']('knob-dim');
+			places[i].element.classList[(digit && active) ? 'remove' : 'add']('knob-dim');
 		    }
 		    const numMarks = Math.floor((valueStrDigits.replace("-", "").length - 1 - 2) / 3);
 		    for (let i = 0; i < marks.length; i++) {
-			marks[i].classList[i < numMarks ? 'remove' : 'add']('knob-dim');
+			marks[i].classList[(i < numMarks && active) ? 'remove' : 'add']('knob-dim');
+		    }
+		    for (let i = 0; i < fixedMarks.length; i++) {
+			fixedMarks[i].classList[active ? 'remove' : 'add']('knob-dim');
 		    }
 		};
+		scope.$watch('active', ngModelCtrl.$render);
 	    },
 	}
     })
