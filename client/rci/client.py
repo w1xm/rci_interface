@@ -1,3 +1,4 @@
+import json
 import websocket
 from threading import Thread, Lock
 
@@ -8,7 +9,9 @@ class Client(object):
         self._ws.connect(self._url)
         self._lock = Lock()
         self._status = {}
-        Thread(target=self._recv_loop).start()
+        t = Thread(target=self._recv_loop)
+        t.daemon = True
+        t.start()
 
     def _recv_loop(self):
         for message in self._ws:
@@ -38,7 +41,7 @@ class Client(object):
 	    'position': position,
 	})
 
-    def set_elevation_position(position):
+    def set_elevation_position(self, position):
         """Set azimuth position.
 
         Args:
@@ -50,13 +53,13 @@ class Client(object):
         })
 
 
-    def stop():
+    def stop(self):
         """Stop commanding movement."""
         self._send({
 	    'command': 'stop',
         })
 
-    def track(body):
+    def track(self, body):
         """Track a known body.
 
         Args:
@@ -67,7 +70,7 @@ class Client(object):
 	    'body': body,
         })
 
-    def bodies():
+    def bodies(self):
         """Return list of known bodies.
 
         The index of the body is passed to track(). If the list of
@@ -83,7 +86,7 @@ class Client(object):
 
 if __name__ == "__main__":
     import time
-    client = Client("ws://w1xm-radar-1.mit.edu:8052/api/ws")
+    client = Client("ws://w1xm-radar-1.mit.edu:8502/api/ws")
     
     time.sleep(1)
     print client
