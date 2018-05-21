@@ -120,9 +120,9 @@ class Client(object):
                 'ra': ra,
                 'dec': dec,
                 'promora': promora,
-                'promodec': prmodec,
+                'promodec': promodec,
                 'parallax': parallax,
-                'radialvelocity': radicalvelocity,
+                'radialvelocity': radialvelocity,
             }
         })
 
