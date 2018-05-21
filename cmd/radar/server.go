@@ -58,7 +58,7 @@ func NewServer(ctx context.Context, port string, place *novas.Place) (*Server, e
 		),
 	}
 	s.updateBodies()
-	go s.track(ctx)
+	go s.trackLoop(ctx)
 	return s, nil
 }
 
@@ -112,7 +112,7 @@ type Star struct {
 	RadialVelocity float64 `json:"radialvelocity"` // radial velocity (km/s)
 }
 
-func (s *Server) track(ctx context.Context) {
+func (s *Server) trackLoop(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -131,6 +131,12 @@ func (s *Server) track(ctx context.Context) {
 		}
 		s.mu.Unlock()
 	}
+}
+
+func (s *Server) track(body int) {
+	s.statusMu.Lock()
+	defer s.statusMu.Unlock()
+	s.status.CommandTrackingBody = body
 }
 
 func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
@@ -155,29 +161,28 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 			s.mu.Lock()
-			s.statusMu.Lock()
 			switch msg.Command {
 			case "track":
-				s.status.CommandTrackingBody = msg.Body
+				s.track(msg.Body)
 			case "write":
 				s.r.Write(msg.Register, msg.Value)
 			case "set_azimuth_position":
-				s.status.CommandTrackingBody = 0
+				s.track(0)
 				s.r.SetAzimuthPosition(msg.Position)
 			case "set_elevation_position":
-				s.status.CommandTrackingBody = 0
+				s.track(0)
 				s.r.SetElevationPosition(msg.Position)
 			case "set_azimuth_velocity":
-				s.status.CommandTrackingBody = 0
+				s.track(0)
 				s.r.SetAzimuthVelocity(msg.Velocity)
 			case "set_elevation_velocity":
-				s.status.CommandTrackingBody = 0
+				s.track(0)
 				s.r.SetElevationVelocity(msg.Velocity)
 			case "stop":
-				s.status.CommandTrackingBody = 0
+				s.track(0)
 				s.r.Stop()
 			case "stop_hard":
-				s.status.CommandTrackingBody = 0
+				s.track(0)
 				s.r.SetAzimuthVelocity(0)
 				s.r.SetElevationVelocity(0)
 			case "set_azimuth_offset":
@@ -187,6 +192,7 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 				s.status.OffsetEl = msg.Position
 				s.r.SetElevationOffset(s.status.OffsetEl)
 			case "add_star":
+				s.statusMu.Lock()
 				s.bodies = append(s.bodies, novas.NewStar(
 					msg.Star.StarName,
 					msg.Star.Catalog,
@@ -198,10 +204,10 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 					msg.Star.Parallax,
 					msg.Star.RadialVelocity))
 				s.updateBodies()
+				s.statusMu.Unlock()
 			default:
 				log.Printf("Unknown command: %+v", msg)
 			}
-			s.statusMu.Unlock()
 			s.mu.Unlock()
 		}
 	}()
