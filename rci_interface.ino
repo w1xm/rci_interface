@@ -129,6 +129,7 @@ void loop() {
   digitalWrite(PIN_HREAD, PIN_HREAD_READ);
   // Toggle HCTL to reset address
   toggleHctl();
+  Serial.print("r");
   for (int i = 0; i < 12; i++) {
     // Assert HREQ
     digitalWrite(PIN_HREQ, PIN_HREQ_ACTIVE);

@@ -130,12 +130,15 @@ func (r *RCI) watch(ctx context.Context) {
 	scanner := bufio.NewScanner(r.s)
 	for scanner.Scan() {
 		input := scanner.Text()
+		if len(input) < 1 {
+			continue
+		}
 		switch {
 		case input[0] == '!':
 			log.Printf(input)
-		case len(input) > 0:
+		case input[0] == 'r':
 			r.mu.Lock()
-			for i, word := range strings.Split(input, " ") {
+			for i, word := range strings.Split(input[1:len(input)-1], " ") {
 				v, err := strconv.ParseUint(word, 16, 16)
 				if err != nil {
 					log.Printf("failed to parse %q: %v", input, err)
@@ -144,6 +147,8 @@ func (r *RCI) watch(ctx context.Context) {
 			}
 			r.notifyStatus()
 			r.mu.Unlock()
+		default:
+			log.Printf("unknown input: %s", input)
 		}
 		if err := scanner.Err(); err != nil {
 			log.Printf("reading serial port:", err)
