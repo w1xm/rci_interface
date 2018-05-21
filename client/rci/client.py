@@ -84,6 +84,35 @@ class Client(object):
                 return self._status['Bodies']
             return None
 
+    def add_star(self, starname, catalog, starnumber, ra, dec, promora, promodec, parallax, radialvelocity):
+        """Add a star to the list of known bodies.
+
+        Args:
+	    starname: name of celestial object
+            catalog: catalog designator (e.g., HIP)
+            starnumber: integer identifier assigned to object
+            ra: ICRS right ascension (hours)
+            dec: ICRS declination (degrees)
+            promora: ICRS proper motion in right ascension (milliarcseconds/year)
+            promodec: ICRS proper motion in declination (milliarcseconds/year)
+            parallax: parallax (milliarcseconds)
+            radialvelocity: radial velocity (km/s)
+        """
+        self._send({
+            'command': 'add_star',
+            'star': {
+                'starname': starname,
+                'catalog': catalog,
+                'starnumber': starnumber,
+                'ra': ra,
+                'dec': dec,
+                'promora': promora,
+                'promodec': prmodec,
+                'parallax': parallax,
+                'radialvelocity': radicalvelocity,
+            }
+        })
+
 if __name__ == "__main__":
     import time
     client = Client("ws://w1xm-radar-1.mit.edu:8502/api/ws")
