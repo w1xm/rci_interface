@@ -49,13 +49,26 @@ func NewServer(ctx context.Context, port string, place *novas.Place) (*Server, e
 		novas.Saturn(),
 		novas.Uranus(),
 		novas.Neptune(),
+		novas.Pluto(),
+		novas.NewStar(
+			"Polaris", "HR", 424,
+			37.95456067, 89.26410897,
+			44.48, -11.85,
+			7.54, -16.42,
+		),
 	}
+	s.updateBodies()
+	go s.track(ctx)
+	return s, nil
+}
+
+// updateBodies syncs s.status.Bodies with s.bodies.
+// It must be called with statusMu locked.
+func (s *Server) updateBodies() {
 	s.status.Bodies = []string{"NONE"}
 	for _, b := range s.bodies {
 		s.status.Bodies = append(s.status.Bodies, b.Name())
 	}
-	go s.track(ctx)
-	return s, nil
 }
 
 var upgrader = websocket.Upgrader{
@@ -84,6 +97,19 @@ type Command struct {
 	Position float64 `json:"position"`
 	Velocity float64 `json:"velocity"`
 	Body     int     `json:"body"`
+	Star     *Star   `json:"star"`
+}
+
+type Star struct {
+	StarName       string  `json:"starname"`       // name of celestial object
+	Catalog        string  `json:"catalog"`        // catalog designator (e.g., HIP)
+	StarNumber     int64   `json:"starnumber"`     // integer identifier assigned to object
+	RA             float64 `json:"ra"`             // ICRS right ascension (hours)
+	Dec            float64 `json:"dec"`            // ICRS declination (degrees)
+	ProMoRA        float64 `json:"promora"`        // ICRS proper motion in right ascension (milliarcseconds/year)
+	ProMoDec       float64 `json:"promodec"`       // ICRS proper motion in declination (milliarcseconds/year)
+	Parallax       float64 `json:"parallax"`       // parallax (milliarcseconds)
+	RadialVelocity float64 `json:"radialvelocity"` // radial velocity (km/s)
 }
 
 func (s *Server) track(ctx context.Context) {
@@ -97,7 +123,7 @@ func (s *Server) track(ctx context.Context) {
 		s.statusMu.RLock()
 		command := s.status.CommandTrackingBody
 		s.statusMu.RUnlock()
-		if command > 0 && command < len(s.bodies) {
+		if command > 0 && command <= len(s.bodies) {
 			body := s.bodies[command-1]
 			topo := body.Topo(novas.Now(), s.place, novas.REFR_NONE)
 			s.r.SetAzimuthPosition(topo.Az)
@@ -160,6 +186,18 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 			case "set_elevation_offset":
 				s.status.OffsetEl = msg.Position
 				s.r.SetElevationOffset(s.status.OffsetEl)
+			case "add_star":
+				s.bodies = append(s.bodies, novas.NewStar(
+					msg.Star.StarName,
+					msg.Star.Catalog,
+					msg.Star.StarNumber,
+					msg.Star.RA,
+					msg.Star.Dec,
+					msg.Star.ProMoRA,
+					msg.Star.ProMoDec,
+					msg.Star.Parallax,
+					msg.Star.RadialVelocity))
+				s.updateBodies()
 			default:
 				log.Printf("Unknown command: %+v", msg)
 			}
