@@ -3,7 +3,10 @@ angular.module('components', [
 ])
     .factory('RCI', function($websocket, $window) {
 	// Open a WebSocket connection
-	var socket = $websocket('ws://'+$window.location.host+'/api/ws');
+	var socket = $websocket(
+	    'ws://'+$window.location.host+'/api/ws', {
+		reconnectIfNotNormalClose: true,
+	    });
 
 	var obj = {
 	    status: {},
