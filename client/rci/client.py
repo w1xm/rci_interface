@@ -1,6 +1,6 @@
 import json
 import websocket
-from threading import Thread, Lock
+from threading import Thread, Lock, Condition
 
 class Client(object):
     def __init__(self, url):
@@ -8,6 +8,7 @@ class Client(object):
         self._ws = websocket.WebSocket(enable_multithread=True)
         self._ws.connect(self._url)
         self._lock = Lock()
+        self._cv = Condition(self._lock)
         self._status = {}
         t = Thread(target=self._recv_loop)
         t.daemon = True
@@ -15,8 +16,9 @@ class Client(object):
 
     def _recv_loop(self):
         for message in self._ws:
-            with self._lock:
+            with self._cv:
                 self._status = json.loads(message)
+                self._cv.notifyAll()
 
     def _send(self, message):
         self._ws.send(json.dumps(message))
@@ -63,13 +65,14 @@ class Client(object):
         """Track a known body.
 
         Args:
-            body: index of a body as returned by bodies()
+            body: index of a body as returned by self.bodies
         """
         self._send({
 	    'command': 'track',
 	    'body': body,
         })
 
+    @property
     def bodies(self):
         """Return list of known bodies.
 
@@ -79,10 +82,20 @@ class Client(object):
         Returns:
             List of strings
         """
-        with self._lock:
+        with self._cv:
+            if not self._status:
+                self._cv.wait()
             if 'Bodies' in self._status:
                 return self._status['Bodies']
             return None
+
+    @property
+    def status(self):
+        """Returns the latest status dictionary."""
+        with self._cv:
+            if not self._status:
+                self._cv.wait()
+            return self._status
 
     def add_star(self, starname, catalog, starnumber, ra, dec, promora, promodec, parallax, radialvelocity):
         """Add a star to the list of known bodies.
