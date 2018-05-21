@@ -56,6 +56,12 @@ func NewServer(ctx context.Context, port string, place *novas.Place) (*Server, e
 			44.48, -11.85,
 			7.54, -16.42,
 		),
+		novas.NewStar(
+			"Vega", "HR", 7001,
+			279.23473479, 38.78368896,
+			200.94, 286.23,
+			130.23, -20.60,
+		),
 	}
 	s.updateBodies()
 	go s.trackLoop(ctx)
