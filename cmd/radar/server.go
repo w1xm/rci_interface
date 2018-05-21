@@ -129,6 +129,7 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 			s.mu.Lock()
+			s.statusMu.Lock()
 			switch msg.Command {
 			case "track":
 				s.status.CommandTrackingBody = msg.Body
@@ -162,6 +163,7 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 			default:
 				log.Printf("Unknown command: %+v", msg)
 			}
+			s.statusMu.Unlock()
 			s.mu.Unlock()
 		}
 	}()
