@@ -113,6 +113,10 @@ bool writeWord(long word) {
 }
 
 void loop() {
+  if (!Serial) {
+    // Without serial, nothing to do.
+    return;
+  }
   // Read the full memory
   while (Serial.available()) {
     *bufPtr = Serial.read();
