@@ -45,16 +45,16 @@
 	    <knob ng-model="rci.status.ElVel" unit="°/s"></knob>
 	</td></tr>
 	<tr><th>In</th><td>{{rci.status.Status | bits}}</td></tr>
-	<tr><th>Mode</th><td><ul>
-	      <li ng-show="{{rci.status.LocalMode}}">Local Mode</li>
-	      <li ng-show="{{rci.status.MaintenanceMode}}">Maintenance Mode</li>
-	      <li ng-show="{{rci.status.ElevationLower}}">Elevation Lower</li>
-	      <li ng-show="{{rci.status.ElevationUpper}}">Elevation Upper</li>
-	      <li ng-show="{{rci.status.Simulator}}">Simulator</li>
-	      <li ng-show="{{rci.status.BadCommand}}">Bad Command</li>
-	      <li ng-show="{{rci.status.HostOkay}}">Host Okay</li>
-	      <li ng-show="{{rci.status.ShutdownError}}">Shutdown {{rci.status.ShutdownError}}</li>
-	</ul></td></tr>
+	<tr><th>Mode</th><td>
+	      <div class="{{rci.status.LocalMode?'':'ng-hide'}}">Local Mode</div>
+	      <div class="{{rci.status.MaintenanceMode?'':'ng-hide'}}">Maintenance Mode</div>
+	      <div class="{{rci.status.ElevationLower?'':'ng-hide'}}">Elevation Lower</div>
+	      <div class="{{rci.status.ElevationUpper?'':'ng-hide'}}">Elevation Upper</div>
+	      <div class="{{rci.status.Simulator?'':'ng-hide'}}">Simulator</div>
+	      <div class="{{rci.status.BadCommand?'':'ng-hide'}}">Bad Command</div>
+	      <div class="{{rci.status.HostOkay?'':'ng-hide'}}">Host Okay</div>
+	      <div class="{{rci.status.ShutdownError?'':'ng-hide'}}">Shutdown {{rci.status.ShutdownError|shutdown}}</div>
+	</td></tr>
 
 	<tr><th colspan="2">Command</th></tr>
 	<tr><th>Raw</th><td>{{rci.status.WriteRegisters | hex}}</td></tr>

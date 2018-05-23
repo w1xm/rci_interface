@@ -109,3 +109,23 @@ angular.module('components', [
 	};
 	return f;
     })
+    .filter('shutdown', function() {
+	const errors = [
+	    "None",
+	    "RAM write/read test failure",
+	    "Azimuth A/D not done",
+	    "Elevation A/D not done",
+	    "Azimuth tach inconsistent",
+	    "Elevation tach inconsistent",
+	    "Upper Elevation limit",
+	    "Lower Elevation limit",
+	    "Unresponsive Azimuth",
+	    "Unresponsive Elevation",
+	    "Azimuth overvelocity",
+	    "Elevation overvelocity",
+	    "Elevation position out of range",
+	];
+	return function(input) {
+	    return errors[input];
+	};
+    })

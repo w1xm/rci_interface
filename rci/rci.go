@@ -84,7 +84,7 @@ func (r *RCI) parseRegisters() Status {
 		CommandElFlags: regToFlags(r.writeRegisters[6]),
 	}
 	for i := range status.Status {
-		status.Status[i] = ((registers[5+(i/8)] >> (uint(i) % 8)) & 1) == 1
+		status.Status[i] = ((registers[5+(i/16)] >> (uint(i) % 16)) & 1) == 1
 	}
 	for i := range status.CommandStatus {
 		status.CommandStatus[i] = ((r.writeRegisters[5+(i/8)] >> (uint(i) % 8)) & 1) == 1
@@ -169,7 +169,7 @@ func (r *RCI) Write(register int, values ...uint16) {
 		r.writeRegisters[register+i] = v
 		out = append(out, fmt.Sprintf("%x", v))
 	}
-	outStr := "w" + strings.Join(out, " ")
+	outStr := "w" + strings.Join(out, " ") + "\n"
 	log.Printf("Writing: %s", outStr)
 	if _, err := r.s.Write([]byte(outStr)); err != nil {
 		log.Print(err)
