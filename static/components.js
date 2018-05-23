@@ -69,6 +69,11 @@ angular.module('components', [
 		    command: 'stop_hard',
 		}));
 	    },
+	    exitShutdown: function() {
+		socket.send(JSON.stringify({
+		    command: 'exit_shutdown',
+		}));
+	    },
 	};
 
 	socket.onMessage(function(message) {

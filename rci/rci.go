@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/tarm/serial"
 )
@@ -216,4 +217,17 @@ func (r *RCI) SetElevationVelocity(angle float64) {
 	r.Write(0, r.lastDiag)
 	r.Write(5, uint16(angle/360*65536))
 	r.Write(6, SERVO_VELOCITY)
+}
+
+func (r *RCI) ExitShutdown() {
+	r.Stop()
+	// Toggling this bit from 0 to 1 to 0 in a time not less than
+	// 0.1 seconds, but not greater than 1.0 second, will force
+	// the RCI to exit from any prior shutdown condition. The
+	// toggling feature prevents the bit from accidentally being
+	// left active, since doing so would prevent genuine shutdowns
+	// from proceeding normally.
+	r.Write(10, 1)
+	time.Sleep(200*time.Millisecond)
+	r.Write(10, 0)
 }

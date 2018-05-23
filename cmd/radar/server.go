@@ -191,11 +191,17 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 				s.track(0)
 				s.r.SetAzimuthVelocity(0)
 				s.r.SetElevationVelocity(0)
+			case "exit_shutdown":
+				s.r.ExitShutdown()
 			case "set_azimuth_offset":
+				s.statusMu.Lock()
 				s.status.OffsetAz = msg.Position
+				s.statusMu.Unlock()
 				s.r.SetAzimuthOffset(s.status.OffsetAz)
 			case "set_elevation_offset":
+				s.statusMu.Lock()
 				s.status.OffsetEl = msg.Position
+				s.statusMu.Unlock()
 				s.r.SetElevationOffset(s.status.OffsetEl)
 			case "add_star":
 				s.statusMu.Lock()

@@ -53,7 +53,7 @@
 	      <div class="{{rci.status.Simulator?'':'ng-hide'}}">Simulator</div>
 	      <div class="{{rci.status.BadCommand?'':'ng-hide'}}">Bad Command</div>
 	      <div class="{{rci.status.HostOkay?'':'ng-hide'}}">Host Okay</div>
-	      <div class="{{rci.status.ShutdownError?'':'ng-hide'}}">Shutdown {{rci.status.ShutdownError|shutdown}}</div>
+	      <div class="{{rci.status.ShutdownError?'':'ng-hide'}}">Shutdown {{rci.status.ShutdownError|shutdown}}<button ng-click="rci.exitShutdown()">Exit Shutdown</button></div>
 	</td></tr>
 
 	<tr><th colspan="2">Command</th></tr>
