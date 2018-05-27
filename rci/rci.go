@@ -114,15 +114,34 @@ type RCI struct {
 }
 
 func Connect(ctx context.Context, port string, statusCallback StatusCallback) (*RCI, error) {
-	// Baud rate does not matter.
-	c := &serial.Config{Name: port, Baud: 9600}
-	s, err := serial.OpenPort(c)
-	if err != nil {
-		return nil, err
-	}
-	r := &RCI{s: s, statusCallback: statusCallback}
-	go r.watch(ctx)
+	r := &RCI{statusCallback: statusCallback}
+	go r.reconnectLoop(ctx, port)
 	return r, nil
+}
+
+func (r *RCI) reconnectLoop(ctx context.Context, port string) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(1 * time.Second):
+		}
+		// Baud rate does not matter.
+		c := &serial.Config{Name: port, Baud: 9600}
+		s, err := serial.OpenPort(c)
+		if err != nil {
+			log.Printf("opening %q: %v", port, err)
+			continue
+		}
+		log.Printf("opened %q", port)
+		r.mu.Lock()
+		r.s = s
+		r.mu.Unlock()
+		r.watch(ctx)
+		r.mu.Lock()
+		r.s = nil
+		r.mu.Unlock()
+	}
 }
 
 func (r *RCI) watch(ctx context.Context) {
@@ -151,9 +170,9 @@ func (r *RCI) watch(ctx context.Context) {
 		default:
 			log.Printf("unknown input: %s", input)
 		}
-		if err := scanner.Err(); err != nil {
-			log.Printf("reading serial port:", err)
-		}
+	}
+	if err := scanner.Err(); err != nil {
+		log.Printf("reading serial port:", err)
 	}
 }
 
@@ -165,6 +184,9 @@ func (r *RCI) notifyStatus() {
 func (r *RCI) Write(register int, values ...uint16) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	if r.s == nil {
+		return
+	}
 	out := []string{fmt.Sprintf("%x", register)}
 	for i, v := range values {
 		r.writeRegisters[register+i] = v
@@ -228,6 +250,6 @@ func (r *RCI) ExitShutdown() {
 	// left active, since doing so would prevent genuine shutdowns
 	// from proceeding normally.
 	r.Write(10, 1)
-	time.Sleep(200*time.Millisecond)
+	time.Sleep(200 * time.Millisecond)
 	r.Write(10, 0)
 }
