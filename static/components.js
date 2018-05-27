@@ -2,83 +2,94 @@ angular.module('components', [
     'ngWebSocket',
 ])
     .factory('RCI', function($websocket, $window) {
-	// Open a WebSocket connection
-	var socket = $websocket(
-	    'ws://'+$window.location.host+'/api/ws', {
-		reconnectIfNotNormalClose: true,
-	    });
-
 	var obj = {
 	    status: {},
-	    write: function(register, values) {
-		socket.send(JSON.stringify({
-		    command: 'write',
-		    register: register,
-		    values: values,
-		}));
-	    },
-	    setAzimuthPosition: function(position) {
-		socket.send(JSON.stringify({
-		    command: 'set_azimuth_position',
-		    position: position,
-		}));
-	    },
-	    setElevationPosition: function(position) {
-		socket.send(JSON.stringify({
-		    command: 'set_elevation_position',
-		    position: position,
-		}));
-	    },
-	    setAzimuthVelocity: function(velocity) {
-		socket.send(JSON.stringify({
-		    command: 'set_azimuth_velocity',
-		    velocity: velocity,
-		}));
-	    },
-	    setElevationVelocity: function(velocity) {
-		socket.send(JSON.stringify({
-		    command: 'set_elevation_velocity',
-		    velocity: velocity,
-		}));
-	    },
-	    setAzimuthOffset: function(position) {
-		socket.send(JSON.stringify({
-		    command: 'set_azimuth_offset',
-		    position: position,
-		}));
-	    },
-	    setElevationOffset: function(position) {
-		socket.send(JSON.stringify({
-		    command: 'set_elevation_offset',
-		    position: position,
-		}));
-	    },
-	    track: function(body) {
-		socket.send(JSON.stringify({
-		    command: 'track',
-		    body: body,
-		}));
-	    },
-	    stop: function() {
-		socket.send(JSON.stringify({
-		    command: 'stop',
-		}));
-	    },
-	    stopHard: function() {
-		socket.send(JSON.stringify({
-		    command: 'stop_hard',
-		}));
-	    },
-	    exitShutdown: function() {
-		socket.send(JSON.stringify({
-		    command: 'exit_shutdown',
-		}));
-	    },
+	}
+	obj.write = function(register, values) {
+	    obj.socket.send(JSON.stringify({
+		command: 'write',
+		register: register,
+		values: values,
+	    }));
+	};
+	obj.setAzimuthPosition = function(position) {
+	    obj.socket.send(JSON.stringify({
+		command: 'set_azimuth_position',
+		position: position,
+	    }));
+	};
+	obj.setElevationPosition = function(position) {
+	    obj.socket.send(JSON.stringify({
+		command: 'set_elevation_position',
+		position: position,
+	    }));
+	};
+	obj.setAzimuthVelocity = function(velocity) {
+	    obj.socket.send(JSON.stringify({
+		command: 'set_azimuth_velocity',
+		velocity: velocity,
+	    }));
+	};
+	obj.setElevationVelocity = function(velocity) {
+	    obj.socket.send(JSON.stringify({
+		command: 'set_elevation_velocity',
+		velocity: velocity,
+	    }));
+	};
+	obj.setAzimuthOffset = function(position) {
+	    obj.socket.send(JSON.stringify({
+		command: 'set_azimuth_offset',
+		position: position,
+	    }));
+	};
+	obj.setElevationOffset = function(position) {
+	    obj.socket.send(JSON.stringify({
+		command: 'set_elevation_offset',
+		position: position,
+	    }));
+	};
+	obj.track = function(body) {
+	    obj.socket.send(JSON.stringify({
+		command: 'track',
+		body: body,
+	    }));
+	};
+	obj.stop = function() {
+	    obj.socket.send(JSON.stringify({
+		command: 'stop',
+	    }));
+	};
+	obj.stopHard = function() {
+	    obj.socket.send(JSON.stringify({
+		command: 'stop_hard',
+	    }));
+	};
+	obj.exitShutdown = function() {
+	    obj.socket.send(JSON.stringify({
+		command: 'exit_shutdown',
+	    }));
 	};
 
-	socket.onMessage(function(message) {
-            obj.status = JSON.parse(message.data);
-	});
+	obj.reconnectWithPassword = function(password) {
+	    let host = $window.location.host;
+	    if (password) {
+		host = "w1xm:"+password+"@"+host;
+	    }
+	    if (obj.socket) {
+		obj.socket.close(true);
+	    }
+	    // Open a WebSocket connection
+	    obj.socket = $websocket(
+		'ws://'+host+'/api/ws', {
+		    reconnectIfNotNormalClose: true,
+		});
+
+	    obj.socket.onMessage(function(message) {
+		obj.status = JSON.parse(message.data);
+	    });
+	};
+
+	obj.reconnectWithPassword(null);
 
 	return obj;
     })

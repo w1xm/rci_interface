@@ -1,10 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"log"
+	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -18,9 +22,12 @@ type Status struct {
 	CommandTrackingBody int
 	Bodies              []string
 	OffsetAz, OffsetEl  float64
+	// Authorized is true if the current connection is allowed to mutate state.
+	Authorized bool
 }
 
 type Server struct {
+	password string
 	place  *novas.Place
 	mu     sync.Mutex
 	r      *rci.Offset
@@ -31,8 +38,8 @@ type Server struct {
 	status     Status
 }
 
-func NewServer(ctx context.Context, port string, place *novas.Place) (*Server, error) {
-	s := &Server{place: place}
+func NewServer(ctx context.Context, port string, password string, place *novas.Place) (*Server, error) {
+	s := &Server{place: place, password: password}
 	s.statusCond = sync.NewCond(s.statusMu.RLocker())
 	r, err := rci.ConnectOffset(ctx, *serialPort, s.statusCallback, 0, 0)
 	if err != nil {
@@ -145,6 +152,40 @@ func (s *Server) track(body int) {
 	s.status.CommandTrackingBody = body
 }
 
+func isLocal(r *http.Request) bool {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return false
+	}
+	switch host {
+	case "127.0.0.1", "::1":
+		return true
+	}
+	return false
+}
+
+func (s *Server) isAuth(r *http.Request) bool {
+	const basicScheme string = "Basic "
+	auth := r.Header.Get("Authorization")
+	if !strings.HasPrefix(auth, basicScheme) {
+		return false
+	}
+	str, err := base64.StdEncoding.DecodeString(auth[len(basicScheme):])
+	if err != nil {
+		return false
+	}
+	creds := bytes.SplitN(str, []byte(":"), 2)
+
+	if len(creds) != 2 {
+		return false
+	}
+
+	givenUser := string(creds[0])
+	givenPass := string(creds[1])
+
+	return givenUser == "w1xm" && givenPass == s.password
+}
+
 func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	ctx, cancel := context.WithCancel(ctx)
@@ -156,6 +197,8 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	auth := isLocal(r) || s.isAuth(r)
+
 	// Read and process incoming messages
 	go func() {
 		for {
@@ -165,6 +208,10 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 				cancel()
 				conn.Close()
 				break
+			}
+			if !auth {
+				log.Printf("Unauthenticated connection tried to %+v", msg)
+				continue
 			}
 			s.mu.Lock()
 			switch msg.Command {
@@ -225,6 +272,7 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	send := func(status Status) {
+		status.Authorized = auth
 		data, err := json.Marshal(status)
 		if err != nil {
 			log.Print(err)

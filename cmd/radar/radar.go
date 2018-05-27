@@ -14,6 +14,7 @@ import (
 
 var (
 	addr        = flag.String("addr", "127.0.0.1:8502", "address to listen on")
+	password    = flag.String("password", "", "password to require on remote connections")
 	staticDir   = flag.String("static_dir", "static", "directory containing static files")
 	serialPort  = flag.String("serial", "", "serial port name")
 	latitude    = flag.Float64("latitude", 42.360326, "latitude of antenna")
@@ -27,7 +28,7 @@ func main() {
 	flag.Parse()
 	ctx := context.Background()
 	place := novas.NewPlace(*latitude, *longitude, *height, *temperature, *pressure)
-	server, err := NewServer(ctx, *serialPort, place)
+	server, err := NewServer(ctx, *serialPort, *password, place)
 	if err != nil {
 		log.Fatal(err)
 	}
