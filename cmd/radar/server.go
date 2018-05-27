@@ -1,14 +1,11 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"log"
 	"net"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -165,25 +162,11 @@ func isLocal(r *http.Request) bool {
 }
 
 func (s *Server) isAuth(r *http.Request) bool {
-	const basicScheme string = "Basic "
-	auth := r.Header.Get("Authorization")
-	if !strings.HasPrefix(auth, basicScheme) {
+	protocols := websocket.Subprotocols(r)
+	if len(protocols) < 1 {
 		return false
 	}
-	str, err := base64.StdEncoding.DecodeString(auth[len(basicScheme):])
-	if err != nil {
-		return false
-	}
-	creds := bytes.SplitN(str, []byte(":"), 2)
-
-	if len(creds) != 2 {
-		return false
-	}
-
-	givenUser := string(creds[0])
-	givenPass := string(creds[1])
-
-	return givenUser == "w1xm" && givenPass == s.password
+	return protocols[0] == s.password
 }
 
 func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
@@ -191,7 +174,12 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	conn, err := upgrader.Upgrade(w, r, nil)
+	var headers http.Header
+	if s.isAuth(r) {
+		headers = http.Header{"Sec-WebSocket-Protocol": []string{s.password}}
+	}
+
+	conn, err := upgrader.Upgrade(w, r, headers)
 	if err != nil {
 		log.Println(err)
 		return

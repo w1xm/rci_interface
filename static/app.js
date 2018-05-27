@@ -5,6 +5,9 @@ angular.module('app', ['components', 'widgets'])
 	$scope.track = function() {
 	    $scope.rci.track($scope.trackBody);
 	};
+	$scope.login = function() {
+	    $scope.rci.reconnectWithPassword(prompt("Enter password"));
+	};
     })
     .controller('MapController', function($scope) {
 	$scope.mapClick = function($event) {

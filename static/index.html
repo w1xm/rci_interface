@@ -33,6 +33,7 @@
     </section>
     <section ng-controller="StatusController">
       <table>
+	<tr><th>Connection</th><td><span ng-show="rci.status.Authorized">Authorized</span><span ng-show="!rci.status.Authorized">read-only <button ng-click="login()">Log In</button></span></td></tr>
 	<tr><th colspan="2">Status</th></tr>
 	<tr><th>Raw</th><td>{{rci.status.RawRegisters | hex}}</td></tr>
 	<tr><th>Diag</th><td>{{rci.status.Diag}}</td></tr>

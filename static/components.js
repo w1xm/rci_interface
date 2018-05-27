@@ -72,15 +72,16 @@ angular.module('components', [
 
 	obj.reconnectWithPassword = function(password) {
 	    let host = $window.location.host;
-	    if (password) {
-		host = "w1xm:"+password+"@"+host;
-	    }
 	    if (obj.socket) {
-		obj.socket.close(true);
+		obj.socket.socket.close(1000);
+	    }
+	    let protocols = undefined;
+	    if (password) {
+		protocols = [password];
 	    }
 	    // Open a WebSocket connection
 	    obj.socket = $websocket(
-		'ws://'+host+'/api/ws', {
+		'ws://'+host+'/api/ws', protocols, {
 		    reconnectIfNotNormalClose: true,
 		});
 
