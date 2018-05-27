@@ -47,14 +47,14 @@
 	</td></tr>
 	<tr><th>In</th><td>{{rci.status.Status | bits}}</td></tr>
 	<tr><th>Mode</th><td>
-	      <div class="{{rci.status.LocalMode?'':'ng-hide'}}">Local Mode</div>
-	      <div class="{{rci.status.MaintenanceMode?'':'ng-hide'}}">Maintenance Mode</div>
-	      <div class="{{rci.status.ElevationLower?'':'ng-hide'}}">Elevation Lower</div>
-	      <div class="{{rci.status.ElevationUpper?'':'ng-hide'}}">Elevation Upper</div>
-	      <div class="{{rci.status.Simulator?'':'ng-hide'}}">Simulator</div>
-	      <div class="{{rci.status.BadCommand?'':'ng-hide'}}">Bad Command</div>
-	      <div class="{{rci.status.HostOkay?'':'ng-hide'}}">Host Okay</div>
-	      <div class="{{rci.status.ShutdownError?'':'ng-hide'}}">Shutdown {{rci.status.ShutdownError|shutdown}}<button ng-click="rci.exitShutdown()">Exit Shutdown</button></div>
+	      <div ng-if="rci.status.LocalMode">Local Mode</div>
+	      <div ng-if="rci.status.MaintenanceMode">Maintenance Mode</div>
+	      <div ng-if="rci.status.ElevationLower">Elevation Lower</div>
+	      <div ng-if="rci.status.ElevationUpper">Elevation Upper</div>
+	      <div ng-if="rci.status.Simulator">Simulator</div>
+	      <div ng-if="rci.status.BadCommand">Bad Command</div>
+	      <div ng-if="rci.status.HostOkay">Host Okay</div>
+	      <div ng-if="rci.status.ShutdownError">Shutdown {{rci.status.ShutdownError|shutdown}}<button ng-click="rci.exitShutdown()">Exit Shutdown</button></div>
 	</td></tr>
 
 	<tr><th colspan="2">Command</th></tr>
