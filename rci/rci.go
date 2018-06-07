@@ -172,7 +172,7 @@ func (r *RCI) watch(ctx context.Context) {
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		log.Printf("reading serial port:", err)
+		log.Printf("reading serial port: %s", err)
 	}
 }
 

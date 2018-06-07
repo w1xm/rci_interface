@@ -11,8 +11,11 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/pebbe/novas"
+	"github.com/w1xm/rci_interface/cmd/radar/terminal"
 	"github.com/w1xm/rci_interface/rci"
 )
+
+const rciBaud = 9600
 
 type Status struct {
 	rci.Status
@@ -24,18 +27,19 @@ type Status struct {
 }
 
 type Server struct {
+	t        *terminal.Terminal
 	password string
-	place  *novas.Place
-	mu     sync.Mutex
-	r      *rci.Offset
-	bodies []*novas.Body
+	place    *novas.Place
+	mu       sync.Mutex
+	r        *rci.Offset
+	bodies   []*novas.Body
 
 	statusMu   sync.RWMutex
 	statusCond *sync.Cond
 	status     Status
 }
 
-func NewServer(ctx context.Context, port string, password string, place *novas.Place) (*Server, error) {
+func NewServer(ctx context.Context, port string, password string, place *novas.Place, terminalPort string) (*Server, error) {
 	s := &Server{place: place, password: password}
 	s.statusCond = sync.NewCond(s.statusMu.RLocker())
 	r, err := rci.ConnectOffset(ctx, *serialPort, s.statusCallback, 0, 0)
@@ -43,6 +47,7 @@ func NewServer(ctx context.Context, port string, password string, place *novas.P
 		return nil, err
 	}
 	s.r = r
+	s.t = terminal.Open(ctx, terminalPort, rciBaud)
 	s.bodies = []*novas.Body{
 		novas.Sun(),
 		novas.Moon(),
@@ -316,4 +321,78 @@ func (s *Server) statusCallback(status rci.Status) {
 	defer s.statusMu.Unlock()
 	s.status.Status = status
 	s.statusCond.Broadcast()
+}
+
+type TerminalStatus struct {
+	Authorized bool
+	ScreenHTML string
+}
+
+type TerminalCommand struct {
+	Input string
+}
+
+func (s *Server) TerminalSocketHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	var headers http.Header
+	if s.isAuth(r) {
+		headers = http.Header{"Sec-WebSocket-Protocol": []string{s.password}}
+	}
+
+	conn, err := upgrader.Upgrade(w, r, headers)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	auth := isLocal(r) || s.isAuth(r)
+
+	// Read and process incoming messages
+	go func() {
+		for {
+			var msg TerminalCommand
+			if err := conn.ReadJSON(&msg); err != nil {
+				log.Printf("parsing json: %v", err)
+				cancel()
+				conn.Close()
+				break
+			}
+			if !auth {
+				log.Printf("Unauthenticated connection tried to %+v", msg)
+				continue
+			}
+			if msg.Input != "" {
+				s.t.WriteString(msg.Input)
+			}
+		}
+	}()
+
+	send := func(html string) {
+		data, err := json.Marshal(TerminalStatus{
+			Authorized: auth,
+			ScreenHTML: html,
+		})
+		if err != nil {
+			log.Print(err)
+			return
+		}
+		if err := conn.WriteMessage(websocket.TextMessage, data); err != nil {
+			log.Print(err)
+			return
+		}
+	}
+
+	fw := s.t.WatchFrames()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+		html := fw.Next()
+		send(html)
+	}
 }
