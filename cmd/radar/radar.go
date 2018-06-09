@@ -14,6 +14,7 @@ import (
 
 var (
 	addr        = flag.String("addr", "127.0.0.1:8502", "address to listen on")
+	rotctldAddr = flag.String("rotctld_addr", "127.0.0.1:4533", "address to listen for rotctld commands on")
 	password    = flag.String("password", "", "password to require on remote connections")
 	staticDir   = flag.String("static_dir", "static", "directory containing static files")
 	serialPort  = flag.String("serial", "", "serial port name")
@@ -30,6 +31,9 @@ func main() {
 	place := novas.NewPlace(*latitude, *longitude, *height, *temperature, *pressure)
 	server, err := NewServer(ctx, *serialPort, *password, place)
 	if err != nil {
+		log.Fatal(err)
+	}
+	if err := server.ListenRotctld(ctx, *rotctldAddr); err != nil {
 		log.Fatal(err)
 	}
 	r := mux.NewRouter()
