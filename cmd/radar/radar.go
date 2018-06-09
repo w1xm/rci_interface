@@ -23,13 +23,15 @@ var (
 	height      = flag.Float64("height", 100, "height of antenna (meters)")
 	temperature = flag.Float64("temperature", 15, "temperature (celsius)")
 	pressure    = flag.Float64("pressure", 1010, "pressure (millibars)")
+	azOffset    = flag.Float64("az_offset", 5.5, "azimuth offset (degrees)")
+	elOffset    = flag.Float64("el_offset", -5.5, "elevation offset (degrees)")
 )
 
 func main() {
 	flag.Parse()
 	ctx := context.Background()
 	place := novas.NewPlace(*latitude, *longitude, *height, *temperature, *pressure)
-	server, err := NewServer(ctx, *serialPort, *password, place)
+	server, err := NewServer(ctx, *serialPort, *password, place, *azOffset, *elOffset)
 	if err != nil {
 		log.Fatal(err)
 	}

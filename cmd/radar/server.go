@@ -25,20 +25,20 @@ type Status struct {
 
 type Server struct {
 	password string
-	place  *novas.Place
-	mu     sync.Mutex
-	r      *rci.Offset
-	bodies []*novas.Body
+	place    *novas.Place
+	mu       sync.Mutex
+	r        *rci.Offset
+	bodies   []*novas.Body
 
 	statusMu   sync.RWMutex
 	statusCond *sync.Cond
 	status     Status
 }
 
-func NewServer(ctx context.Context, port string, password string, place *novas.Place) (*Server, error) {
+func NewServer(ctx context.Context, port string, password string, place *novas.Place, azOffset, elOffset float64) (*Server, error) {
 	s := &Server{place: place, password: password}
 	s.statusCond = sync.NewCond(s.statusMu.RLocker())
-	r, err := rci.ConnectOffset(ctx, *serialPort, s.statusCallback, 0, 0)
+	r, err := rci.ConnectOffset(ctx, *serialPort, s.statusCallback, azOffset, elOffset)
 	if err != nil {
 		return nil, err
 	}
