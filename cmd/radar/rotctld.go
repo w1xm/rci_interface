@@ -17,6 +17,7 @@ func (s *Server) ListenRotctld(ctx context.Context, addr string) error {
 	}
 	go func() {
 		<-ctx.Done()
+		log.Print("shutdown; closing rotctld socket")
 		ln.Close()
 	}()
 	go func() {
@@ -26,6 +27,7 @@ func (s *Server) ListenRotctld(ctx context.Context, addr string) error {
 				log.Printf("failed to accept: %v", err)
 				continue
 			}
+			log.Print("accepted connection")
 			go s.handleRotctld(conn)
 		}
 	}()
@@ -33,6 +35,7 @@ func (s *Server) ListenRotctld(ctx context.Context, addr string) error {
 }
 
 func (s *Server) handleRotctld(conn net.Conn) {
+	defer conn.Close()
 	log.Printf("accepted connection from %v", conn.RemoteAddr())
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
