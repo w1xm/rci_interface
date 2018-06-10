@@ -43,20 +43,21 @@ func (s *Server) handleRotctld(conn net.Conn) {
 		var args []string
 		if len(cmd) == 0 {
 			continue
-		} else if len(cmd) > 1 && cmd[0:2] == `+\` {
+		} else if len(cmd) > 2 && cmd[0:2] == `+\` {
 			parts := strings.Split(cmd, " ")
-			cmd = parts[0][2 : len(parts[0])-1]
+			cmd = parts[0][2:len(parts[0])]
 			if len(parts) > 1 {
-				args = parts[1 : len(parts)-1]
+				args = parts[1:len(parts)]
 			}
 			fmt.Fprintf(conn, "%s:\n", cmd)
 		} else {
 			// Space after command is optional.
 			if len(cmd) > 1 {
-				args = strings.Split(strings.TrimLeft(cmd[1:len(cmd)-1], " "), " ")
+				args = strings.Split(strings.TrimLeft(cmd[1:len(cmd)], " "), " ")
 			}
 			cmd = string(cmd[0])
 		}
+		log.Printf("%v command: %q args: %#v", conn.RemoteAddr(), cmd, args)
 		rprt := -1
 		switch cmd {
 		case "1", "dump_caps":
