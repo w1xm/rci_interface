@@ -27,7 +27,6 @@ func (s *Server) ListenRotctld(ctx context.Context, addr string) error {
 				log.Printf("failed to accept: %v", err)
 				continue
 			}
-			log.Print("accepted connection")
 			go s.handleRotctld(conn)
 		}
 	}()
@@ -47,11 +46,15 @@ func (s *Server) handleRotctld(conn net.Conn) {
 		} else if len(cmd) > 1 && cmd[0:2] == `+\` {
 			parts := strings.Split(cmd, " ")
 			cmd = parts[0][2 : len(parts[0])-1]
-			args = parts[1 : len(parts)-1]
+			if len(parts) > 1 {
+				args = parts[1 : len(parts)-1]
+			}
 			fmt.Fprintf(conn, "%s:\n", cmd)
 		} else {
 			// Space after command is optional.
-			args = strings.Split(strings.TrimLeft(cmd[1:len(cmd)-1], " "), " ")
+			if len(cmd) > 1 {
+				args = strings.Split(strings.TrimLeft(cmd[1:len(cmd)-1], " "), " ")
+			}
 			cmd = string(cmd[0])
 		}
 		rprt := -1
