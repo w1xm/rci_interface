@@ -54,6 +54,21 @@ class Client(object):
 	    'position': position,
         })
 
+    def set_offsets(self, azimuth_offset, elevation_offset):
+        """Set azimuth and elevation offsets.
+
+        Args:
+            azimuth_offset: angle in degrees to subtract from commanded azimuth
+            elevation_offset: angle in degrees to subtract from commanded elevation
+        """
+        self._send({
+        'command': 'set_azimuth_offset',
+        'position': azimuth_offset,
+        })
+        self._send({
+        'command': 'set_elevation_offset',
+        'position': elevation_offset,
+        })
 
     def stop(self):
         """Stop commanding movement."""
