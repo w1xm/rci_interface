@@ -2,7 +2,7 @@
 <block>
   <name>pos_max_hold_fvf</name>
   <key>w1xm_pos_max_hold_fvf</key>
-  <category>[w1xm]</category>
+  <category>[W1XM]</category>
   <import>import w1xm</import>
   <make>w1xm.pos_max_hold_fvf($ws_url, $buckets)</make>
   <!-- Make one 'param' node for every Parameter you want settable from the GUI.
@@ -11,11 +11,15 @@
        * key (makes the value accessible as $keyname, e.g. in the make node)
        * type -->
   <param>
-    <name>...</name>
-    <key>...</key>
-    <type>...</type>
+    <name>WS URL</name>
+    <key>ws_url</key>
+    <type>string</type>
   </param>
-
+  <param>
+    <name>Buckets</name>
+    <key>buckets</key>
+    <type>int</type>
+  </param>
   <!-- Make one 'sink' node per input. Sub-nodes:
        * name (an identifier for the GUI)
        * type
@@ -23,7 +27,7 @@
        * optional (set to 1 for optional inputs) -->
   <sink>
     <name>in</name>
-    <type><!-- e.g. int, float, complex, byte, short, xxx_vector, ...--></type>
+    <type>float</type>
   </sink>
 
   <!-- Make one 'source' node per output. Sub-nodes:
@@ -33,6 +37,7 @@
        * optional (set to 1 for optional inputs) -->
   <source>
     <name>out</name>
-    <type><!-- e.g. int, float, complex, byte, short, xxx_vector, ...--></type>
+    <type>float</type>
+    <vlen>$buckets</vlen>
   </source>
 </block>

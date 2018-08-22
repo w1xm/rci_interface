@@ -29,14 +29,17 @@ class pos_max_hold_fvf(gr.sync_block):
     def __init__(self, ws_url="ws://localhost:8502/api/ws", buckets=360):
         gr.sync_block.__init__(self,
             name="pos_max_hold_fvf",
-            in_sig=[<+numpy.float+>],
-            out_sig=[<+numpy.float+>])
-
+            in_sig=[np.float32],
+            out_sig=[(np.float32, buckets)]
+        )
+        self._client = client.Client(ws_url)
+        self.buckets = buckets
+        self._max_hold = np.zeros(buckets, np.float64)
 
     def work(self, input_items, output_items):
-        in0 = input_items[0]
-        out = output_items[0]
-        # <+signal processing here+>
-        out[:] = in0
+        az = self._client.status['AzPos']
+        print az, input_item
+        bucket = int(az/self._buckets)
+        self._max_hold[bucket] = max(self._max_hold[bucket], input_item)
+        output_items[0][0][:] = self._max_hold
         return len(output_items[0])
-

@@ -19,8 +19,9 @@
 # Boston, MA 02110-1301, USA.
 # 
 
-import numpy
+import numpy as np
 from gnuradio import gr
+from rci import client
 
 class pos_max_hold_fvf(gr.sync_block):
     """
@@ -33,13 +34,16 @@ class pos_max_hold_fvf(gr.sync_block):
             out_sig=[(np.float32, buckets)]
         )
         self._client = client.Client(ws_url)
-        self.buckets = buckets
+        self._buckets = buckets
         self._max_hold = np.zeros(buckets, np.float64)
+        self._max_hold -= 140
 
     def work(self, input_items, output_items):
+        input_item = max(input_items[0])
+        input_item = 10 * np.log10(1000*input_item)
         az = self._client.status['AzPos']
         print az, input_item
-        bucket = int(az/self._buckets)
+        bucket = int(az/360*self._buckets)
         self._max_hold[bucket] = max(self._max_hold[bucket], input_item)
         output_items[0][0][:] = self._max_hold
         return len(output_items[0])
