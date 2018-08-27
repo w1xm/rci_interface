@@ -54,6 +54,9 @@ void setup()
   // Modbus devices are addressed from 0 (master), 1-254 (slave), 255 (broadcast).
   mb.setSlaveId(MODBUS_SLAVE_ID);
 
+  // Input register 0 contains the number of supported bands.
+  mb.addIreg(0, BANDS);
+
   // Discrete input 0 shows fault status (e.g. multiple TX requested).
   mb.addIsts(0, false);
   // Create two output coils and one discrete input for each band.
