@@ -80,7 +80,7 @@
 	    <div ng-repeat="band in rci.status.Sequencer.Bands">
 	      Band {{$index}} <span ng-if="band.CommandTX">TX</span> <span ng-if="band.CommandRX">RX</span> <span ng-if="!band.CommandTX && !band.CommandRX">Ref</span>
 	    </div>
-	</td></tr>xo
+	</td></tr>
 	<tr><th>Azimuth Offset</th><td>
 	    <knob ng-model="rci.status.OffsetAz" unit="°" writable="true" min="-360" max="360" wrap="true" ng-change="rci.setAzimuthOffset(rci.status.OffsetAz)"></knob>
 	</td></tr>

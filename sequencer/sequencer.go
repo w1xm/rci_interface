@@ -42,6 +42,7 @@ func Connect(ctx context.Context, port string, baud int, statusCallback StatusCa
 	handler.Parity = "N"
 	handler.StopBits = 1
 	handler.Timeout = 1 * time.Second
+	handler.SlaveId = 1
 	handler.Logger = log.New(os.Stderr, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.Llongfile)
 	client := modbus.NewClient(handler)
 	s := &Sequencer{handler: handler, client: client, statusCallback: statusCallback}
@@ -87,7 +88,6 @@ func (s *Sequencer) pollOnce() error {
 	if err != nil {
 		return err
 	}
-	log.Printf("input register 0 = %v", results)
 	bands := binary.BigEndian.Uint16(results)
 	coils, err := s.client.ReadCoils(0, bands*2)
 	if err != nil {
@@ -106,8 +106,8 @@ func (s *Sequencer) pollOnce() error {
 
 func bytesToBits(bs []byte) []bool {
 	var out []bool
-	for b := range bs {
-		for i := 7; i >= 0; i-- {
+	for _, b := range bs {
+		for i := 0; i < 8; i++ {
 			out = append(out, (b>>uint(i)&1) == 1)
 		}
 	}
@@ -126,7 +126,7 @@ func (s *Sequencer) parseRegisters() Status {
 	for i := 0; i < s.bands; i++ {
 		status.Bands = append(status.Bands, Band{
 			CommandTX: s.coils[i],
-			TX:        s.inputs[i-1],
+			TX:        s.inputs[i+1],
 			CommandRX: s.coils[s.bands+i],
 		})
 	}
