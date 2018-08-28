@@ -1,5 +1,4 @@
-#define STR_SERIAL_NUMBER "RCI5"
-
+// Compile for Teensy++ 2.0 with Serial RCI5
 #define WRITE_HIGH C
 #define WRITE_LOW D
 #define READ_HIGH F
