@@ -265,6 +265,8 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 			case "set_band_tx":
 				s.seq.SetBandTX(msg.Band, msg.Enabled)
 			case "set_band_rx":
+				// Cancel TX
+				s.seq.SetBandTX(msg.Band, false)
 				s.seq.SetBandRX(msg.Band, msg.Enabled)
 			default:
 				log.Printf("Unknown command: %+v", msg)

@@ -87,6 +87,32 @@ class Client(object):
 	    'body': body,
         })
 
+    def set_band_tx(self, band, enabled):
+        """Set a band to transmit.
+
+        Args:
+            band: 0-index of band to transmit on
+            enabled: bool state
+        """
+        self._send({
+            'command': 'set_band_tx',
+            'band': band,
+            'enabled': enabled,
+        })
+
+    def set_band_rx(self, band, enabled):
+        """Set a band to receive.
+
+        Args:
+            band: 0-index of band to receive on
+            enabled: bool state
+        """
+        self._send({
+            'command': 'set_band_rx',
+            'band': band,
+            'enabled': enabled,
+        })
+
     @property
     def bodies(self):
         """Return list of known bodies.

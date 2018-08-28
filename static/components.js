@@ -69,6 +69,20 @@ angular.module('components', [
 		command: 'exit_shutdown',
 	    }));
 	};
+	obj.setBandTx = function(band, enabled) {
+	    obj.socket.send(JSON.stringify({
+		command: 'set_band_tx',
+		band: band,
+		enabled: enabled,
+	    }));
+	};
+	obj.setBandRx = function(band, enabled) {
+	    obj.socket.send(JSON.stringify({
+		command: 'set_band_rx',
+		band: band,
+		enabled: enabled,
+	    }));
+	};
 
 	obj.reconnectWithPassword = function(password) {
 	    let host = $window.location.host;

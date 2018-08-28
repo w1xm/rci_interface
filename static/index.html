@@ -77,8 +77,11 @@
 	<tr><td></td><td><button ng-click="rci.stop()">STOP</button><button ng-click="rci.stopHard()">HARD STOP</button></tr>
 	<tr><th>Track</th><td><select ng-options="idx*1 as body for (idx, body) in rci.status.Bodies" ng-model="trackBody" ng-change="track()"></select></td></tr>
 	<tr><th>Sequencer</th><td>
-	    <div ng-repeat="band in rci.status.Sequencer.Bands">
-	      Band {{$index}} <span ng-if="band.CommandTX">TX</span> <span ng-if="band.CommandRX">RX</span> <span ng-if="!band.CommandTX && !band.CommandRX">Ref</span>
+	    <div ng-repeat="band in rci.status.Sequencer.Bands track by $index">
+	      Band {{$index}}
+	      <Label><input name="band{{$index}}" type="radio" ng-checked="band.CommandTX" ng-value="true" ng-click="rci.setBandTx($index, true)" />TX</label>
+	      <label><input name="band{{$index}}" type="radio" ng-checked="band.CommandRX" ng-value="true" ng-click="rci.setBandRx($index, true)" />RX</label>
+	      <label><input name="band{{$index}}" type="radio" ng-checked="{{!band.CommandTX && !band.CommandRX}}" ng-click="rci.setBandTx($index, false); rci.setBandRx($index, false)" />Ref</label>
 	    </div>
 	</td></tr>
 	<tr><th>Azimuth Offset</th><td>

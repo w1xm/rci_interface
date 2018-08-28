@@ -227,7 +227,7 @@ angular.module('widgets', [])
 
 		ngModelCtrl.$render = function() {
 		    const value = ngModelCtrl.$viewValue;
-		    console.log('externally changed to', value);
+		    //console.log('externally changed to', value);
 		    const active = angular.isDefined(scope.active) ? scope.active: true;
 		    let valueStr = new Intl.NumberFormat('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals, useGrouping: false }).format(value);
 		    if (valueStr === '0' && value === 0 && 1/value === -Infinity) {
