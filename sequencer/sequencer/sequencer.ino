@@ -18,6 +18,7 @@
 
 //#define Sband_PTT 6
 //#define Sband_50ohm_ref 7
+// NOTE: Pin 13 is also used by the onboard LED; high is ~2.85V with effective resistor divider.
 //#define Sband_event1 13
 
 //#define Cband_PTT 8
@@ -30,7 +31,7 @@
 
 // Output "coils":
 // TX L, S, C, X
-// REF L, S, C, X
+// RX L, S, C, X
 // Input "descrete inputs":
 // Invalid command
 // L TX CONFIRM
@@ -48,7 +49,8 @@ void setup()
 {
   // Enable RX all the time.
   pinMode(serial_rx_en, OUTPUT);
-  digitalWrite(serial_rx_en, HIGH);
+  digitalWrite(serial_rx_en, LOW);
+
   // Configure a Modbus RTU slave on Serial1 (pins 1 and 2).
   mb.config(&Serial1, MODBUS_BAUD, SERIAL_8N1, serial_tx_en);
   // Modbus devices are addressed from 0 (master), 1-254 (slave), 255 (broadcast).
@@ -71,8 +73,10 @@ void setup()
     pinMode(OUTPUT_PIN_BASE+(i*2)+1, OUTPUT);
     digitalWrite(OUTPUT_PIN_BASE+(i*2)+1, HIGH);
     // Set the event1 input to an input.
-    pinMode(INPUT_PIN_BASE+i, INPUT);
+    pinMode(INPUT_PIN_BASE+i, INPUT_PULLUP);
   }
+
+  Serial.begin(9600); // for debugging
 }
 
 void loop()
@@ -109,11 +113,12 @@ void loop()
       tx = -1;
     }
   }
+
   for (int i = 0; i < BANDS; i++) {
     // Enable TX when band is selected. TX is active low.
     digitalWrite(OUTPUT_PIN_BASE+(i*2), !(i == tx));
     // Enable RX when requested AND there is no TX.
-    digitalWrite(OUTPUT_PIN_BASE+(i+2)+1, !(tx < 0 && mb.Coil(BANDS+i)));
+    digitalWrite(OUTPUT_PIN_BASE+(i*2)+1, !(tx < 0 && mb.Coil(BANDS+i)));
   }
 }
 
