@@ -56,6 +56,9 @@
 	      <div ng-if="rci.status.HostOkay">Host Okay</div>
 	      <div ng-if="rci.status.ShutdownError">Shutdown {{rci.status.ShutdownError|shutdown}}<button ng-click="rci.exitShutdown()">Exit Shutdown</button></div>
 	</td></tr>
+	<tr><th>Sequencer TX</th><td>
+	    <span ng-repeat="band in rci.status.Sequencer.Bands"><span ng-if="band.TX">Band {{$index}}</span>
+	</td></tr>
 
 	<tr><th colspan="2">Command</th></tr>
 	<tr><th>Raw</th><td>{{rci.status.WriteRegisters | hex}}</td></tr>
@@ -73,6 +76,11 @@
 	<tr><th>Tracking</th><td>{{rci.status.Bodies[rci.status.CommandTrackingBody]}}</td></tr>
 	<tr><td></td><td><button ng-click="rci.stop()">STOP</button><button ng-click="rci.stopHard()">HARD STOP</button></tr>
 	<tr><th>Track</th><td><select ng-options="idx*1 as body for (idx, body) in rci.status.Bodies" ng-model="trackBody" ng-change="track()"></select></td></tr>
+	<tr><th>Sequencer</th><td>
+	    <div ng-repeat="band in rci.status.Sequencer.Bands">
+	      Band {{$index}} <span ng-if="band.CommandTX">TX</span> <span ng-if="band.CommandRX">RX</span> <span ng-if="!band.CommandTX && !band.CommandRX">Ref</span>
+	    </div>
+	</td></tr>xo
 	<tr><th>Azimuth Offset</th><td>
 	    <knob ng-model="rci.status.OffsetAz" unit="°" writable="true" min="-360" max="360" wrap="true" ng-change="rci.setAzimuthOffset(rci.status.OffsetAz)"></knob>
 	</td></tr>

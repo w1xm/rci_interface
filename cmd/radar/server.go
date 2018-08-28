@@ -12,10 +12,12 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/pebbe/novas"
 	"github.com/w1xm/rci_interface/rci"
+	"github.com/w1xm/rci_interface/sequencer"
 )
 
 type Status struct {
 	rci.Status
+	Sequencer sequencer.Status
 	CommandTrackingBody int
 	Bodies              []string
 	OffsetAz, OffsetEl  float64
@@ -29,20 +31,26 @@ type Server struct {
 	mu       sync.Mutex
 	r        *rci.Offset
 	bodies   []*novas.Body
+	seq *sequencer.Sequencer
 
 	statusMu   sync.RWMutex
 	statusCond *sync.Cond
 	status     Status
 }
 
-func NewServer(ctx context.Context, port string, password string, place *novas.Place, azOffset, elOffset float64) (*Server, error) {
+func NewServer(ctx context.Context, port string, password string, place *novas.Place, azOffset, elOffset float64, sequencerPort string, sequencerBaud int) (*Server, error) {
 	s := &Server{place: place, password: password}
 	s.statusCond = sync.NewCond(s.statusMu.RLocker())
-	r, err := rci.ConnectOffset(ctx, *serialPort, s.statusCallback, azOffset, elOffset)
+	r, err := rci.ConnectOffset(ctx, port, s.statusCallback, azOffset, elOffset)
 	if err != nil {
 		return nil, err
 	}
 	s.r = r
+	seq, err := sequencer.Connect(ctx, sequencerPort, sequencerBaud, s.sequencerStatusCallback)
+	if err != nil {
+		return nil, err
+	}
+	s.seq = seq
 	s.bodies = []*novas.Body{
 		novas.Sun(),
 		novas.Moon(),
@@ -108,6 +116,8 @@ type Command struct {
 	Velocity float64 `json:"velocity"`
 	Body     int     `json:"body"`
 	Star     *Star   `json:"star"`
+	Band int `json:"band"`
+	Enabled bool `json:"enabled"`
 }
 
 type Star struct {
@@ -252,6 +262,10 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 					msg.Star.RadialVelocity))
 				s.updateBodies()
 				s.statusMu.Unlock()
+			case "set_band_tx":
+				s.seq.SetBandTX(msg.Band, msg.Enabled)
+			case "set_band_rx":
+				s.seq.SetBandRX(msg.Band, msg.Enabled)
 			default:
 				log.Printf("Unknown command: %+v", msg)
 			}
@@ -315,5 +329,12 @@ func (s *Server) statusCallback(status rci.Status) {
 	s.statusMu.Lock()
 	defer s.statusMu.Unlock()
 	s.status.Status = status
+	s.statusCond.Broadcast()
+}
+
+func (s *Server) sequencerStatusCallback(status sequencer.Status) {
+	s.statusMu.Lock()
+	defer s.statusMu.Unlock()
+	s.status.Sequencer = status
 	s.statusCond.Broadcast()
 }
