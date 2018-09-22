@@ -54,6 +54,17 @@ class Client(object):
 	    'position': position,
         })
 
+    def set_azimuth_velocity(self, velocity):
+        """Set azimuth velocity.
+
+        Args:
+            velocity: velocity in degrees/sec
+        """
+        self._send({
+            'command': 'set_azimuth_velocity',
+            'velocity': velocity,
+        })
+
     def set_offsets(self, azimuth_offset, elevation_offset):
         """Set azimuth and elevation offsets.
 
@@ -111,6 +122,12 @@ class Client(object):
             'command': 'set_band_rx',
             'band': band,
             'enabled': enabled,
+        })
+
+    def i_know_what_i_am_doing_unsafe_exit_shutdown(self):
+        """Exit the current shutdown state."""
+        self._send({
+            'command': 'exit_shutdown',
         })
 
     @property
