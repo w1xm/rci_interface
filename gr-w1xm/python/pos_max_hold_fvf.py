@@ -35,6 +35,7 @@ class pos_max_hold_fvf(gr.sync_block):
         )
         self._client = client.Client(ws_url)
         self._buckets = buckets
+        self._alpha = 0.9
         self._max_hold = np.zeros(buckets, np.float64)
         self._max_hold -= 140
 
@@ -42,8 +43,8 @@ class pos_max_hold_fvf(gr.sync_block):
         input_item = max(input_items[0])
         input_item = 10 * np.log10(1000*input_item)
         az = self._client.status['AzPos']
-        print az, input_item
+        #print az, input_item
         bucket = int(az/360*self._buckets)
-        self._max_hold[bucket] = max(self._max_hold[bucket], input_item)
+        self._max_hold[bucket] = (self._max_hold[bucket]*self._alpha) + (input_item*(1-self._alpha))
         output_items[0][0][:] = self._max_hold
         return len(output_items[0])
