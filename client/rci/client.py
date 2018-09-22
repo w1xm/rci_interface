@@ -1,4 +1,6 @@
+import errno
 import json
+import time
 import websocket
 from threading import Thread, Lock, Condition
 
@@ -98,18 +100,29 @@ class Client(object):
 	    'body': body,
         })
 
-    def set_band_tx(self, band, enabled):
+    def set_band_tx(self, band, enabled, wait=True, timeout=5):
         """Set a band to transmit.
 
         Args:
             band: 0-index of band to transmit on
             enabled: bool state
+            wait: block until tx confirmation
+            timeout: seconds to wait for tx confirmation
         """
         self._send({
             'command': 'set_band_tx',
             'band': band,
             'enabled': enabled,
         })
+        if wait:
+            start = time.time()
+            with self._cv:
+                while not self._status or not self._status['Sequencer']['Bands'][band]['TX']:
+                    left=float(timeout)-(time.time()-start)
+                    if left < 0:
+                        raise IOError(errno.ETIMEDOUT, "timed out waiting for TX confirmation")
+                    self._cv.wait(timeout=left)
+                return
 
     def set_band_rx(self, band, enabled):
         """Set a band to receive.
