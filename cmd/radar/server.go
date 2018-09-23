@@ -17,7 +17,7 @@ import (
 
 type Status struct {
 	rci.Status
-	Sequencer sequencer.Status
+	Sequencer           sequencer.Status
 	CommandTrackingBody int
 	Bodies              []string
 	OffsetAz, OffsetEl  float64
@@ -31,7 +31,7 @@ type Server struct {
 	mu       sync.Mutex
 	r        *rci.Offset
 	bodies   []*novas.Body
-	seq *sequencer.Sequencer
+	seq      *sequencer.Sequencer
 
 	statusMu   sync.RWMutex
 	statusCond *sync.Cond
@@ -116,8 +116,8 @@ type Command struct {
 	Velocity float64 `json:"velocity"`
 	Body     int     `json:"body"`
 	Star     *Star   `json:"star"`
-	Band int `json:"band"`
-	Enabled bool `json:"enabled"`
+	Band     int     `json:"band"`
+	Enabled  bool    `json:"enabled"`
 }
 
 type Star struct {
@@ -188,6 +188,8 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 	if s.isAuth(r) {
 		headers = http.Header{"Sec-WebSocket-Protocol": []string{s.password}}
 	}
+
+	highres := r.FormValue("highres") != ""
 
 	conn, err := upgrader.Upgrade(w, r, headers)
 	if err != nil {
@@ -318,6 +320,9 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		case <-c:
 			send(status)
+			if highres {
+				continue
+			}
 			select {
 			case <-ctx.Done():
 				return
