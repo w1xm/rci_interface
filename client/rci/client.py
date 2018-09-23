@@ -67,6 +67,17 @@ class Client(object):
             'velocity': velocity,
         })
 
+    def set_elevation_velocity(self, velocity):
+        """Set elevation velocity.
+
+        Args:
+            velocity: velocity in degrees/sec
+        """
+        self._send({
+            'command': 'set_elevation_velocity',
+            'velocity': velocity,
+        })
+
     def set_offsets(self, azimuth_offset, elevation_offset):
         """Set azimuth and elevation offsets.
 
@@ -144,6 +155,22 @@ class Client(object):
         })
 
     @property
+    def azimuth_position(self):
+        return self.status.get('AzPos')
+
+    @property
+    def azimuth_velocity(self):
+        return self.status.get('AzVel')
+
+    @property
+    def elevation_position(self):
+        return self.status.get('ElPos')
+
+    @property
+    def elevation_velocity(self):
+        return self.status.get('ElVel')
+
+    @property
     def bodies(self):
         """Return list of known bodies.
 
@@ -153,18 +180,13 @@ class Client(object):
         Returns:
             List of strings
         """
-        with self._cv:
-            if not self._status:
-                self._cv.wait()
-            if 'Bodies' in self._status:
-                return self._status['Bodies']
-            return None
+        return self.status.get('Bodies')
 
     @property
     def status(self):
         """Returns the latest status dictionary."""
         with self._cv:
-            if not self._status:
+            while not self._status:
                 self._cv.wait()
             return self._status
 
