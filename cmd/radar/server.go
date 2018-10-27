@@ -64,15 +64,21 @@ func NewServer(ctx context.Context, port string, password string, place *novas.P
 		novas.Pluto(),
 		novas.NewStar(
 			"Polaris", "HR", 424,
-			37.95456067, 89.26410897,
+			37.95456067/15, 89.26410897,
 			44.48, -11.85,
 			7.54, -16.42,
 		),
 		novas.NewStar(
 			"Vega", "HR", 7001,
-			279.23473479, 38.78368896,
+			279.23473479/15, 38.78368896,
 			200.94, 286.23,
 			130.23, -20.60,
+		),
+		novas.NewStar(
+			"Cygnus A", "W", 57,
+			299.86815263/15, 40.73391583,
+			0, 0,
+			0, 16360,
 		),
 	}
 	s.updateBodies()
