@@ -16,6 +16,7 @@ import (
 )
 
 type Status struct {
+	SequenceNumber int
 	rci.Status
 	Sequencer           sequencer.Status
 	CommandTrackingBody int
@@ -115,15 +116,16 @@ func (s *Server) StatusHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 type Command struct {
-	Command  string  `json:"command"`
-	Register int     `json:"register"`
-	Value    uint16  `json:"value"`
-	Position float64 `json:"position"`
-	Velocity float64 `json:"velocity"`
-	Body     int     `json:"body"`
-	Star     *Star   `json:"star"`
-	Band     int     `json:"band"`
-	Enabled  bool    `json:"enabled"`
+	Command        string  `json:"command"`
+	SequenceNumber int     `json:"seq"`
+	Register       int     `json:"register"`
+	Value          uint16  `json:"value"`
+	Position       float64 `json:"position"`
+	Velocity       float64 `json:"velocity"`
+	Body           int     `json:"body"`
+	Star           *Star   `json:"star"`
+	Band           int     `json:"band"`
+	Enabled        bool    `json:"enabled"`
 }
 
 type Star struct {
@@ -196,6 +198,7 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	highres := r.FormValue("highres") != ""
+	throttle := r.FormValue("throttle") != ""
 
 	conn, err := upgrader.Upgrade(w, r, headers)
 	if err != nil {
@@ -204,6 +207,11 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	auth := isLocal(r) || s.isAuth(r)
+
+	log.Printf("New client from %q, highres: %v throttle: %v", r.RemoteAddr, highres, throttle)
+
+	t := &ThrottledTimer{period: 25 * time.Millisecond, throttle: throttle}
+	t.cond = sync.NewCond(&t.mu)
 
 	// Read and process incoming messages
 	go func() {
@@ -214,6 +222,10 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 				cancel()
 				conn.Close()
 				break
+			}
+			if msg.Command == "ack" {
+				t.Ack(msg.SequenceNumber)
+				continue
 			}
 			if !auth {
 				log.Printf("Unauthenticated connection tried to %+v", msg)
@@ -283,7 +295,11 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
+	seq := 0
+
 	send := func(status Status) {
+		status.SequenceNumber = seq
+		seq++
 		status.Authorized = auth
 		data, err := json.Marshal(status)
 		if err != nil {
@@ -332,10 +348,47 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 			select {
 			case <-ctx.Done():
 				return
-			case <-time.After(25 * time.Millisecond):
+			case <-t.Wait(seq):
 			}
 		}
 	}
+}
+
+type ThrottledTimer struct {
+	period   time.Duration
+	throttle bool
+	mu       sync.Mutex
+	cond     *sync.Cond
+	ack      int
+}
+
+func (t *ThrottledTimer) Ack(seq int) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if seq > t.ack {
+		t.ack = seq
+		t.cond.Broadcast()
+	}
+}
+
+func (t *ThrottledTimer) Wait(seq int) <-chan time.Time {
+	if !t.throttle {
+		return time.After(t.period)
+	}
+	c := make(chan time.Time, 1)
+	go func() {
+		t.mu.Lock()
+		defer t.mu.Unlock()
+		for {
+			if seq-t.ack < 5 {
+				time.Sleep(t.period)
+				c <- time.Now()
+				return
+			}
+			t.cond.Wait()
+		}
+	}()
+	return c
 }
 
 func (s *Server) statusCallback(status rci.Status) {

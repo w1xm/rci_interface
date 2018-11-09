@@ -95,12 +95,16 @@ angular.module('components', [
 	    }
 	    // Open a WebSocket connection
 	    obj.socket = $websocket(
-		'ws://'+host+'/api/ws', protocols, {
+		'ws://'+host+'/api/ws?throttle=1', protocols, {
 		    reconnectIfNotNormalClose: true,
 		});
 
 	    obj.socket.onMessage(function(message) {
 		obj.status = JSON.parse(message.data);
+		obj.socket.send(JSON.stringify({
+		    command: 'ack',
+		    seq: obj.status.SequenceNumber,
+		}));
 	    });
 	};
 
