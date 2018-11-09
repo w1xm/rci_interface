@@ -43,7 +43,8 @@ func Connect(ctx context.Context, port string, baud int, statusCallback StatusCa
 	handler.StopBits = 1
 	handler.Timeout = 1 * time.Second
 	handler.SlaveId = 1
-	handler.Logger = log.New(os.Stderr, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.Llongfile)
+	_ = os.Stderr
+	//handler.Logger = log.New(os.Stderr, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.Llongfile)
 	client := modbus.NewClient(handler)
 	s := &Sequencer{handler: handler, client: client, statusCallback: statusCallback}
 	go s.reconnectLoop(ctx, port)
