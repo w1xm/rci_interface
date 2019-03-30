@@ -41,9 +41,11 @@ func (s *Server) handleRotctld(conn net.Conn) {
 		// Two forms of command: single character, or "+\" followed by command name.
 		cmd := scanner.Text()
 		var args []string
+		var extended bool
 		if len(cmd) == 0 {
 			continue
 		} else if len(cmd) > 2 && cmd[0:2] == `+\` {
+			extended = true
 			parts := strings.Split(cmd, " ")
 			cmd = parts[0][2:len(parts[0])]
 			if len(parts) > 1 {
@@ -78,12 +80,14 @@ Can get Info: N
 `)
 			rprt = 0
 		case "S", "stop":
+			extended = true // always print RPRT
 			s.mu.Lock()
 			s.track(0)
 			s.r.Stop()
 			s.mu.Unlock()
 			rprt = 0
 		case "P", "set_pos":
+			extended = true // always print RPRT
 			if len(args) != 2 {
 				rprt = -22
 				break
@@ -105,6 +109,7 @@ Can get Info: N
 			s.mu.Unlock()
 			rprt = 0
 		case "M", "move":
+			extended = true // always print RPRT
 			if len(args) != 2 {
 				rprt = -22
 				break
@@ -149,11 +154,16 @@ Can get Info: N
 			if status.AzPos > 180 {
 				status.AzPos -= 360
 			}
-			fmt.Fprintf(conn, "Azimuth: %.6f\n", status.AzPos)
-			fmt.Fprintf(conn, "Elevation: %.6f\n", status.ElPos)
+			if extended {
+				fmt.Fprintf(conn, "Azimuth: %.6f\nElevation: %.6f\n", status.AzPos, status.ElPos)
+			} else {
+				fmt.Fprintf(conn, "%.6f\n%.6f\n", status.AzPos, status.ElPos)
+			}
 			rprt = 0
 		}
-		fmt.Fprintf(conn, "RPRT %d\n", rprt)
+		if extended || rprt != 0 {
+			fmt.Fprintf(conn, "RPRT %d\n", rprt)
+		}
 	}
 	if err := scanner.Err(); err != nil {
 		log.Printf("reading from %v: %v", err)
