@@ -53,7 +53,7 @@ func (s *Server) handleRotctld(conn net.Conn) {
 		} else {
 			// Space after command is optional.
 			if len(cmd) > 1 {
-				args = strings.Split(strings.TrimLeft(cmd[1:len(cmd)], " "), " ")
+				args = strings.Fields(strings.TrimLeft(cmd[1:len(cmd)], " "))
 			}
 			cmd = string(cmd[0])
 		}
