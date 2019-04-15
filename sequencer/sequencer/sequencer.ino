@@ -1,5 +1,11 @@
 //dish RX/TX sequencer functios for the teensy.
 
+// NOTE: ModbusSerial::task must be modified to change
+//   delayMicroseconds(_t15);
+// into
+//   delayMicroseconds(10*_t15);
+// Empirically, the inter-character timeout is too slow.
+
 #include <Modbus.h>
 #include <ModbusSerial.h>
 
