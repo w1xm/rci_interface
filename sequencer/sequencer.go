@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/goburrow/modbus"
+	"github.com/w1xm/rci_interface/sequencer/modbushttp"
 )
 
 type Band struct {
@@ -25,8 +26,14 @@ type Status struct {
 
 type StatusCallback func(status Status)
 
+type modbusHandler interface {
+	modbus.ClientHandler
+	Connect() error
+	Close() error
+}
+
 type Sequencer struct {
-	handler        *modbus.RTUClientHandler
+	handler        modbusHandler
 	statusCallback StatusCallback
 	mu             sync.Mutex
 	client         modbus.Client
@@ -43,6 +50,15 @@ func Connect(ctx context.Context, port string, baud int, statusCallback StatusCa
 	handler.StopBits = 1
 	handler.Timeout = 1 * time.Second
 	handler.SlaveId = 1
+	return newSequencer(ctx, handler, port, statusCallback)
+}
+
+func ConnectRemote(ctx context.Context, url string, statusCallback StatusCallback) (*Sequencer, error) {
+	handler := modbushttp.NewClient(url)
+	return newSequencer(ctx, handler, url, statusCallback)
+}
+
+func newSequencer(ctx context.Context, handler modbusHandler, port string, statusCallback StatusCallback) (*Sequencer, error) {
 	_ = os.Stderr
 	//handler.Logger = log.New(os.Stderr, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.Llongfile)
 	client := modbus.NewClient(handler)

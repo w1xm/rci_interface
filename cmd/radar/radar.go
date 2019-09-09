@@ -26,6 +26,7 @@ var (
 	azOffset      = flag.Float64("az_offset", 5.5, "azimuth offset (degrees)")
 	elOffset      = flag.Float64("el_offset", -5.5, "elevation offset (degrees)")
 	seqSerialPort = flag.String("sequencer_serial", "", "sequencer serial port name")
+	seqURL        = flag.String("sequencer_url", "", "remote sequencer URL")
 	seqBaud       = flag.Int("sequencer_baud", 19200, "sequencer baud rate")
 )
 
@@ -33,7 +34,7 @@ func main() {
 	flag.Parse()
 	ctx := context.Background()
 	place := novas.NewPlace(*latitude, *longitude, *height, *temperature, *pressure)
-	server, err := NewServer(ctx, *serialPort, *password, place, *azOffset, *elOffset, *seqSerialPort, *seqBaud)
+	server, err := NewServer(ctx, *serialPort, *password, place, *azOffset, *elOffset, *seqURL, *seqSerialPort, *seqBaud)
 	if err != nil {
 		log.Fatal(err)
 	}

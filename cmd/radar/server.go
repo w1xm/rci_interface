@@ -39,7 +39,7 @@ type Server struct {
 	status     Status
 }
 
-func NewServer(ctx context.Context, port string, password string, place *novas.Place, azOffset, elOffset float64, sequencerPort string, sequencerBaud int) (*Server, error) {
+func NewServer(ctx context.Context, port string, password string, place *novas.Place, azOffset, elOffset float64, sequencerURL string, sequencerPort string, sequencerBaud int) (*Server, error) {
 	s := &Server{place: place, password: password}
 	s.statusCond = sync.NewCond(s.statusMu.RLocker())
 	r, err := rci.ConnectOffset(ctx, port, s.statusCallback, azOffset, elOffset)
@@ -47,11 +47,14 @@ func NewServer(ctx context.Context, port string, password string, place *novas.P
 		return nil, err
 	}
 	s.r = r
-	seq, err := sequencer.Connect(ctx, sequencerPort, sequencerBaud, s.sequencerStatusCallback)
+	if sequencerURL != "" {
+		s.seq, err = sequencer.ConnectRemote(ctx, sequencerURL, s.sequencerStatusCallback)
+	} else {
+		s.seq, err = sequencer.Connect(ctx, sequencerPort, sequencerBaud, s.sequencerStatusCallback)
+	}
 	if err != nil {
 		return nil, err
 	}
-	s.seq = seq
 	s.bodies = []*novas.Body{
 		novas.Sun(),
 		novas.Moon(),
