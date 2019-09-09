@@ -23,7 +23,8 @@ type Status struct {
 	Bodies              []string
 	OffsetAz, OffsetEl  float64
 	// Authorized is true if the current connection is allowed to mutate state.
-	Authorized bool
+	Authorized          bool
+	Latitude, Longitude float64
 }
 
 type Server struct {
@@ -39,8 +40,15 @@ type Server struct {
 	status     Status
 }
 
-func NewServer(ctx context.Context, port string, password string, place *novas.Place, azOffset, elOffset float64, sequencerURL string, sequencerPort string, sequencerBaud int) (*Server, error) {
-	s := &Server{place: place, password: password}
+func NewServer(ctx context.Context, port string, password string, latitude, longitude float64, place *novas.Place, azOffset, elOffset float64, sequencerURL string, sequencerPort string, sequencerBaud int) (*Server, error) {
+	s := &Server{
+		status: Status{
+			Latitude:  latitude,
+			Longitude: longitude,
+		},
+		place:    place,
+		password: password,
+	}
 	s.statusCond = sync.NewCond(s.statusMu.RLocker())
 	r, err := rci.ConnectOffset(ctx, port, s.statusCallback, azOffset, elOffset)
 	if err != nil {

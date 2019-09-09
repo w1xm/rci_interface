@@ -34,7 +34,7 @@ func main() {
 	flag.Parse()
 	ctx := context.Background()
 	place := novas.NewPlace(*latitude, *longitude, *height, *temperature, *pressure)
-	server, err := NewServer(ctx, *serialPort, *password, place, *azOffset, *elOffset, *seqURL, *seqSerialPort, *seqBaud)
+	server, err := NewServer(ctx, *serialPort, *password, *latitude, *longitude, place, *azOffset, *elOffset, *seqURL, *seqSerialPort, *seqBaud)
 	if err != nil {
 		log.Fatal(err)
 	}
