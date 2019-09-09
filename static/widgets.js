@@ -253,3 +253,41 @@ angular.module('widgets', [])
 	    },
 	}
     })
+    .directive('skymap', function() {
+	let nextId = 0;
+	return {
+	    template: '',
+	    restrict: 'E',
+	    scope: {
+		'latitude': '<',
+		'longitude': '<',
+		'az': '<',
+		'el': '<',
+	    },
+	    link: function(scope, element, attrs) {
+		const container = document.createElement('div');
+		container.id = 'skymap-' + (nextId++)
+		element.append(container);
+		const planetarium = S.virtualsky({
+		    'id': container.id,
+		    'width': 1000,
+		    'height': 1000,
+		    'projection': 'gnomic',
+		    'fov': 45,
+		    'az': scope.az,
+		    'latitude': scope.latitude,
+		    'longitude': scope.longitude,
+		    'live': true,
+		});
+		scope.$watch('az', function(newAz) {
+		    planetarium.az_off = newAz%360-180;
+		    planetarium.draw();
+		});
+		scope.$watch('el', function(newEl, oldEl, scope) {
+		    let radec = planetarium.azel2radec(scope.az, newEl);
+		    planetarium.setDec(radec.dec);
+		    planetarium.draw();
+		});
+	    },
+	};
+    })

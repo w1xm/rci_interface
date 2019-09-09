@@ -1,15 +1,23 @@
 <!doctype html>
 <html ng-app="app">
   <head>
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.6/angular.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.6/angular-animate.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.6/angular-aria.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.6/angular-messages.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angular_material/1.1.12/angular-material.min.js"></script>
     <script src="https://cdn.rawgit.com/AngularClass/angular-websocket/v2.0.0/dist/angular-websocket.min.js"></script>
+    <script src="virtualsky/stuquery.min.js"></script>
+    <script src="virtualsky/virtualsky.min.js" type="text/javascript"></script>
     <script src="components.js"></script>
     <script src="widgets.js"></script>
     <script src="app.js"></script>
     <link rel="stylesheet" href="app.css" />
   </head>
   <body>
-    <section ng-controller="StatusController">
+    <section>
+      <md-tabs md-dynamic-height md-border-bottom>
+	<md-tab label="Map" ng-controller="StatusController">
       <svg ng-controller="MapController" width="1000" height="1000" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ng-mousedown="$event.preventDefault()" >
 	<defs>
 	  <clipPath id="elClip">
@@ -30,6 +38,11 @@
 	  </g>
 	</g>
       </svg>
+	</md-tab>
+	<md-tab label="Sky" ng-controller="StatusController">
+	  <skymap latitude="rci.status.Latitude" longitude="rci.status.Longitude" az="rci.status.AzPos" el="rci.status.ElPos"></skymap>
+	</md-tab>
+      </md-tabs>
     </section>
     <section ng-controller="StatusController">
       <table>
