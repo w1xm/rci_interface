@@ -17,7 +17,8 @@
   <body>
     <section>
       <md-tabs md-dynamic-height md-border-bottom>
-	<md-tab label="Map" ng-controller="StatusController">
+	<md-tab label="Map">
+	  <div ng-controller="StatusController">
       <svg ng-controller="MapController" width="1000" height="1000" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ng-mousedown="$event.preventDefault()" >
 	<defs>
 	  <clipPath id="elClip">
@@ -38,9 +39,12 @@
 	  </g>
 	</g>
       </svg>
+	  </div>
 	</md-tab>
-	<md-tab label="Sky" ng-controller="StatusController">
-	  <skymap latitude="rci.status.Latitude" longitude="rci.status.Longitude" az="rci.status.AzPos" el="rci.status.ElPos"></skymap>
+	<md-tab label="Sky">
+	  <div ng-controller="StatusController">
+	    <skymap latitude="rci.status.Latitude" longitude="rci.status.Longitude" az="rci.status.AzPos" el="rci.status.ElPos"></skymap>
+	  </div>
 	</md-tab>
       </md-tabs>
     </section>
