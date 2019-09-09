@@ -1,5 +1,9 @@
 //dish RX/TX sequencer functios for the teensy.
 
+// Teensy 3.2 / 3.1
+// USB Type: Serial
+
+
 // NOTE: ModbusSerial::task must be modified to change
 //   delayMicroseconds(_t15);
 // into
