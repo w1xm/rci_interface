@@ -267,27 +267,42 @@ angular.module('widgets', [])
 	    link: function(scope, element, attrs) {
 		const container = document.createElement('div');
 		container.id = 'skymap-' + (nextId++)
+		container.style.width = container.style.height = "1000px";
 		element.append(container);
+		console.log(scope.latitude, scope.longitude);
 		const planetarium = S.virtualsky({
 		    'id': container.id,
 		    'width': 1000,
 		    'height': 1000,
-		    'projection': 'gnomic',
+		    'projection': 'stereo',
 		    'fov': 45,
 		    'az': scope.az,
-		    'latitude': scope.latitude,
-		    'longitude': scope.longitude,
 		    'live': true,
+		    'showplanets': true,
+		    'gridlines_az': true,
+		    'showgalaxy': true,
 		});
-		scope.$watch('az', function(newAz) {
-		    planetarium.az_off = newAz%360-180;
+		let pointer = planetarium.addPointer({
+		    ra: 0,
+		    dec: 0,
+		    label: 'status',
+		    colour: planetarium.col.pointers,
+		})-1;
+		scope.$watch('latitude', function(lat) {
+		    planetarium.setLatitude(lat);
+		});
+		scope.$watch('longitude', function(lon) {
+		    planetarium.setLongitude(lon);
+		});
+		let updateAzel = function(n, o, scope) {
+		    planetarium.az_off = scope.az%360-180;
+		    let radec = planetarium.azel2radec(scope.az*planetarium.d2r, scope.el*planetarium.d2r);
+		    planetarium.pointers[pointer].ra = radec.ra;
+		    planetarium.pointers[pointer].dec = radec.dec;
 		    planetarium.draw();
-		});
-		scope.$watch('el', function(newEl, oldEl, scope) {
-		    let radec = planetarium.azel2radec(scope.az, newEl);
-		    planetarium.setDec(radec.dec);
-		    planetarium.draw();
-		});
+		};
+		scope.$watch('az', updateAzel);
+		scope.$watch('el', updateAzel);
 	    },
 	};
     })
