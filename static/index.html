@@ -48,8 +48,18 @@
 	  </div>
 	</md-tab>
 	<md-tab label="Ground">
-	  <div ng-controller="StatusController" style="width: 1000px; height: 720px; background-image: url('pano-night.jpg'); background-position: top left {{rci.status.AzPos*15.6-500}}px">
-	  </div>
+	  <svg ng-controller="StatusController" width="1000" height="720" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ng-mousedown="$event.preventDefault()" >
+	    <defs>
+	      <pattern id="pano" x="{{500-(rci.status.AzPos*15.6)}}px" width="5629" height="720" patternUnits="userSpaceOnUse">
+		<image href="pano-night.jpg" xlink:href="pano-night.jpg" />
+		<g class="{{rci.status.CommandElFlags == 'POSITION'?'':'ng-hide'}}" transform="translate({{rci.status.CommandAzPos*15.6}} {{360-(rci.status.CommandElPos*15.6)}})" stroke="red" stroke-width="2">
+		  <path d="M -10 0 L -1 0 M 1 0 L 10 0 M 0 10 L 0 1 M 0 -1 L 0 -10" />
+		</g>
+	      </pattern>
+	    </defs>
+	    <rect width="1000" height="720" fill="url(#pano)" />
+	    <circle stroke="black" fill="none" cx="500" cy="{{360-(rci.status.ElPos*15.6)}}" r="47" stroke-width="2" />
+	  </svg>
 	</md-tab>
       </md-tabs>
     </section>
