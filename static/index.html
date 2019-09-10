@@ -44,7 +44,7 @@
 	</md-tab>
 	<md-tab label="Sky">
 	  <div ng-controller="StatusController">
-	    <skymap latitude="rci.status.Latitude" longitude="rci.status.Longitude" az="rci.status.AzPos" el="rci.status.ElPos"></skymap>
+	    <skymap latitude="rci.status.Latitude" longitude="rci.status.Longitude" az="rci.status.AzPos" el="rci.status.ElPos" click="setAzElPosition($event)"></skymap>
 	  </div>
 	</md-tab>
       </md-tabs>

@@ -263,13 +263,14 @@ angular.module('widgets', [])
 		'longitude': '<',
 		'az': '<',
 		'el': '<',
+		'click': '&?',
 	    },
 	    link: function(scope, element, attrs) {
 		const container = document.createElement('div');
 		container.id = 'skymap-' + (nextId++)
 		container.style.width = container.style.height = "1000px";
 		element.append(container);
-		console.log(scope.latitude, scope.longitude);
+
 		const planetarium = S.virtualsky({
 		    'id': container.id,
 		    'width': 1000,
@@ -281,7 +282,20 @@ angular.module('widgets', [])
 		    'showplanets': true,
 		    'gridlines_az': true,
 		    'showgalaxy': true,
+		    'mouse': false,
+		    'objects': 'virtualsky/messier.json',
+		    'callback': {
+			'click': function(e) {
+			    let azel = this.projection.xy2azel(e.x, e.y, this.wide, this.tall);
+			    e.az = azel[0]/this.d2r+this.az_off;
+			    e.el = azel[1]/this.d2r;
+			    if (scope.click) {
+				scope.click({'$event': e});
+			    }
+			},
+		    },
 		});
+
 		let pointer = planetarium.addPointer({
 		    ra: 0,
 		    dec: 0,

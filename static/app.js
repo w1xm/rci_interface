@@ -8,6 +8,10 @@ angular.module('app', ['components', 'widgets', 'ngMaterial'])
 	$scope.login = function() {
 	    $scope.rci.reconnectWithPassword(prompt("Enter password"));
 	};
+	$scope.setAzElPosition = function($event) {
+	    $scope.rci.setAzimuthPosition($event.az);
+	    $scope.rci.setElevationPosition($event.el);
+	};
     })
     .controller('MapController', function($scope) {
 	$scope.mapClick = function($event) {
