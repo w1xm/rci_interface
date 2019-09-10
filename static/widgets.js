@@ -261,8 +261,8 @@ angular.module('widgets', [])
 	    scope: {
 		'latitude': '<',
 		'longitude': '<',
-		'az': '<',
-		'el': '<',
+		'azel': '<',
+		'targetazel': '<',
 		'click': '&?',
 	    },
 	    link: function(scope, element, attrs) {
@@ -277,7 +277,7 @@ angular.module('widgets', [])
 		    'height': 1000,
 		    'projection': 'stereo',
 		    'fov': 45,
-		    'az': scope.az,
+		    'az': scope.azel[0],
 		    'live': true,
 		    'showplanets': true,
 		    'gridlines_az': true,
@@ -296,11 +296,17 @@ angular.module('widgets', [])
 		    },
 		});
 
-		let pointer = planetarium.addPointer({
+		const pointerStatus = planetarium.addPointer({
 		    ra: 0,
 		    dec: 0,
 		    label: 'status',
 		    colour: planetarium.col.pointers,
+		})-1;
+		const pointerTarget = planetarium.addPointer({
+		    ra: 0,
+		    dec: 0,
+		    label: 'target',
+		    colour: 'red',
 		})-1;
 		scope.$watch('latitude', function(lat) {
 		    planetarium.setLatitude(lat);
@@ -308,15 +314,20 @@ angular.module('widgets', [])
 		scope.$watch('longitude', function(lon) {
 		    planetarium.setLongitude(lon);
 		});
-		let updateAzel = function(n, o, scope) {
-		    planetarium.az_off = scope.az%360-180;
-		    let radec = planetarium.azel2radec(scope.az*planetarium.d2r, scope.el*planetarium.d2r);
+		let updateAzel = function(pointer, azel) {
+		    if (!azel[2]) {
+			planetarium.pointers[pointer].ra = planetarium.pointers[pointer].dec = 0;
+			planetarium.draw();
+			return;
+		    }
+		    planetarium.az_off = azel[0]%360-180;
+		    let radec = planetarium.azel2radec(azel[0]*planetarium.d2r, azel[1]*planetarium.d2r);
 		    planetarium.pointers[pointer].ra = radec.ra;
 		    planetarium.pointers[pointer].dec = radec.dec;
 		    planetarium.draw();
 		};
-		scope.$watch('az', updateAzel);
-		scope.$watch('el', updateAzel);
+		scope.$watch('azel', updateAzel.bind(undefined, pointerStatus));
+		scope.$watch('targetazel', updateAzel.bind(undefined, pointerTarget));
 	    },
 	};
     })
