@@ -47,6 +47,10 @@
 	    <skymap latitude="rci.status.Latitude" longitude="rci.status.Longitude" azel="[rci.status.AzPos, rci.status.ElPos, true]" targetazel="[rci.status.CommandAzPos, rci.status.CommandElPos, (rci.status.CommandAzFlags == 'POSITION' && rci.status.CommandElFlags == 'POSITION')]" click="setAzElPosition($event)"></skymap>
 	  </div>
 	</md-tab>
+	<md-tab label="Ground">
+	  <div ng-controller="StatusController" style="width: 1000px; height: 720px; background-image: url('pano-night.jpg'); background-position: top left {{rci.status.AzPos*15.6-500}}px">
+	  </div>
+	</md-tab>
       </md-tabs>
     </section>
     <section ng-controller="StatusController">
