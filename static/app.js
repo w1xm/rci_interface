@@ -33,4 +33,24 @@ angular.module('app', ['components', 'widgets', 'ngMaterial'])
 	    angle = -angle;
 	    $scope.rci.setElevationPosition(360*angle/(2*Math.PI));
 	};
+    })
+    .controller('PanoController', function($scope, RCI) {
+	$scope.rci = RCI;
+	$scope.pixelsPerDegree = 15.6;
+	$scope.horizonOffset = 320;
+	$scope.panoShift = 0;
+	$scope.$watch('rci.status.AzPos', n => { $scope.panoShift = 500 - (n * $scope.pixelsPerDegree) });
+	$scope.commandY = 0;
+	$scope.$watch('rci.status.CommandElPos', n => { $scope.commandY = $scope.horizonOffset-(((n+180)%360-180) * $scope.pixelsPerDegree) });
+	$scope.commandX = 0;
+	$scope.$watch('rci.status.CommandAzPos', n => { $scope.commandX = n * $scope.pixelsPerDegree });
+	$scope.statusY = 0;
+	$scope.$watch('rci.status.ElPos', n => { $scope.statusY = $scope.horizonOffset - (((n+180)%360-180) * $scope.pixelsPerDegree) });
+	$scope.panoClick = function($event) {
+	    var rect = $event.currentTarget.ownerSVGElement.getBoundingClientRect();
+	    let az = ($event.clientX - rect.left - $scope.panoShift) / $scope.pixelsPerDegree;
+	    let el = ($scope.horizonOffset - ($event.clientY - rect.top)) / $scope.pixelsPerDegree;
+	    RCI.setAzimuthPosition(az);
+	    RCI.setElevationPosition(el);
+	};
     });
