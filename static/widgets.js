@@ -300,14 +300,50 @@ angular.module('widgets', [])
 		    ra: 0,
 		    dec: 0,
 		    label: 'status',
+		    d: 1.5, // degrees
 		    colour: planetarium.col.pointers,
 		})-1;
 		const pointerTarget = planetarium.addPointer({
 		    ra: 0,
 		    dec: 0,
+		    d: 10, // pixels
 		    label: 'target',
 		    colour: 'red',
 		})-1;
+
+		oldHighlight = planetarium.highlight;
+		planetarium.highlight = function(i) {
+		    const p = this.pointers[i];
+		    if (p.ra && p.dec) {
+			const pos = this.radec2xy(p.ra*this.d2r, p.dec*this.d2r);
+			if (i == pointerTarget) {
+			    // Draw a crosshair
+			    const c = this.ctx;
+			    c.beginPath();
+			    c.strokeStyle = p.colour;
+			    c.moveTo(pos.x-p.d, pos.y);
+			    c.lineTo(pos.x-1, pos.y);
+			    c.moveTo(pos.x+1, pos.y);
+			    c.lineTo(pos.x+p.d, pos.y);
+			    c.moveTo(pos.x, pos.y-p.d);
+			    c.lineTo(pos.x, pos.y-1);
+			    c.moveTo(pos.x, pos.y+1);
+			    c.lineTo(pos.x, pos.y+p.d);
+			    c.stroke();
+			} else if (i == pointerStatus) {
+			    // Draw a circle
+			    let radius = Math.abs(pos.x-this.radec2xy((p.ra-(p.d/2))*this.d2r, p.dec*this.d2r).x);
+			    const c = this.ctx;
+			    c.beginPath();
+			    c.strokeStyle = p.colour;
+			    c.arc(pos.x, pos.y, radius, 0, 2*Math.PI);
+			    c.stroke();
+			} else {
+			    oldHighlight.call(this, i);
+			}
+		    }
+		};
+
 		scope.$watch('latitude', function(lat) {
 		    planetarium.setLatitude(lat);
 		});
