@@ -30,6 +30,13 @@ var (
 	seqBaud       = flag.Int("sequencer_baud", 19200, "sequencer baud rate")
 )
 
+func MaxAge(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Cache-Control", "max-age=60, public, must-revalidate, proxy-revalidate")
+		h.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	flag.Parse()
 	ctx := context.Background()
@@ -42,10 +49,10 @@ func main() {
 		log.Fatal(err)
 	}
 	r := mux.NewRouter()
-	r.Handle("/api/status", http.HandlerFunc(server.StatusHandler))
-	r.Handle("/api/ws", http.HandlerFunc(server.StatusSocketHandler))
+	r.HandleFunc("/api/status", server.StatusHandler)
+	r.HandleFunc("/api/ws", server.StatusSocketHandler)
 	r.PathPrefix("/debug").Handler(http.DefaultServeMux)
-	r.PathPrefix("/").Handler(http.FileServer(http.Dir(*staticDir)))
+	r.PathPrefix("/").Handler(MaxAge(http.FileServer(http.Dir(*staticDir))))
 	srv := &http.Server{
 		Handler:      r,
 		Addr:         *addr,
