@@ -28,15 +28,15 @@
 	</defs>
 	<g ng-click="mapClick($event)" ng-mousemove="$event.buttons && mapClick($event)">
 	  <image href="map.jpg" xlink:href="map.jpg" width="1000" height="1000" />
-	  <line x1="500" y1="500" x2="500" y2="-500" transform="rotate({{rci.status.AzPos}} 500 500)" stroke="black" stroke-width="2" />
-	  <line x1="500" y1="500" x2="500" y2="-500" class="{{rci.status.CommandAzFlags == 'POSITION'?'':'ng-hide'}}" transform="rotate({{rci.status.CommandAzPos}} 500 500)" stroke="red" />
+	  <line x1="500" y1="500" x2="500" y2="-500" ng:attr:transform="rotate({{rci.status.AzPos}} 500 500)" stroke="black" stroke-width="2" />
+	  <line x1="500" y1="500" x2="500" y2="-500" ng:attr:class="{{rci.status.CommandAzFlags == 'POSITION'?'':'ng-hide'}}" ng:attr:transform="rotate({{rci.status.CommandAzPos}} 500 500)" stroke="red" />
 	</g>
 	<g ng-click="elClick($event)" ng-mousemove="$event.buttons && elClick($event)">
 	  <rect width="100" height="100" fill="white" />
 	  <g clip-path="url(#elClip)">
 	    <path d="M 10 10 L 10 90 L 90 90" fill="none" stroke="black" stroke-width="2"/>
-	    <line x1="10" x2="200" y1="90" y2="90" transform="rotate({{-rci.status.ElPos}} 10 90)" stroke="black" stroke-width="2" />
-	    <line x1="10" x2="200" y1="90" y2="90" class="{{rci.status.CommandElFlags == 'POSITION'?'':'ng-hide'}}" transform="rotate({{-rci.status.CommandElPos}} 10 90)" stroke="red" />
+	    <line x1="10" x2="200" y1="90" y2="90" ng:attr:transform="rotate({{-rci.status.ElPos}} 10 90)" stroke="black" stroke-width="2" />
+	    <line x1="10" x2="200" y1="90" y2="90" ng:attr:class="{{rci.status.CommandElFlags == 'POSITION'?'':'ng-hide'}}" ng:attr:transform="rotate({{-rci.status.CommandElPos}} 10 90)" stroke="red" />
 	  </g>
 	</g>
       </svg>
@@ -50,16 +50,16 @@
 	<md-tab label="Ground">
 	  <svg ng-controller="PanoController" width="1000" height="720" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ng-mousedown="$event.preventDefault()" >
 	    <defs>
-	      <pattern id="pano" x="{{panoShift}}px" width="5629" height="720" patternUnits="userSpaceOnUse">
+	      <pattern id="pano" ng:attr:x="{{panoShift || 0}}px" width="5629" height="720" patternUnits="userSpaceOnUse">
 		<image href="pano-night.jpg" xlink:href="pano-night.jpg" />
-		<g class="{{rci.status.CommandElFlags == 'POSITION'?'':'ng-hide'}}" transform="translate({{commandX}} {{commandY}})" stroke="red" stroke-width="2">
+		<g ng:attr:class="{{rci.status.CommandElFlags == 'POSITION'?'':'ng-hide'}}" ng:attr:transform="translate({{commandX || 0}} {{commandY || 0}})" stroke="red" stroke-width="2">
 		  <path d="M -10 0 L -1 0 M 1 0 L 10 0 M 0 10 L 0 1 M 0 -1 L 0 -10" />
 		</g>
 	      </pattern>
 	    </defs>
 	    <g ng-click="panoClick($event)">
 	      <rect width="1000" height="720" fill="url(#pano)" />
-	      <circle stroke="black" fill="none" cx="500" cy="{{statusY}}" r="47" stroke-width="2" />
+	      <circle stroke="black" fill="none" cx="500" ng:attr:cy="{{statusY || 0}}" r="47" stroke-width="2" />
 	    </g>
 	  </svg>
 	</md-tab>
