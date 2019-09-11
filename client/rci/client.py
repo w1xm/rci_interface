@@ -5,10 +5,10 @@ import websocket
 from threading import Thread, Lock, Condition
 
 class Client(object):
-    def __init__(self, url):
+    def __init__(self, url, password=None):
         self._url = url
         self._ws = websocket.WebSocket(enable_multithread=True)
-        self._ws.connect(self._url)
+        self._ws.connect(self._url, subprotocols=[password] if password else None)
         self._lock = Lock()
         self._cv = Condition(self._lock)
         self._status = {}
