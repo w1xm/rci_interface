@@ -1,4 +1,7 @@
 angular.module('app', ['components', 'widgets', 'ngMaterial'])
+    .config(function($mdGestureProvider) {
+	$mdGestureProvider.skipClickHijack();
+    })
     .controller('StatusController', function($scope, $locale, RCI) {
 	$scope.rci = RCI;
 	$scope.trackBody = 0;
