@@ -56,4 +56,17 @@ angular.module('app', ['components', 'widgets', 'ngMaterial'])
 	    RCI.setAzimuthPosition(az);
 	    RCI.setElevationPosition(el);
 	};
+	$scope.ticks = function() {
+	    let out = []
+	    for (let i = 0; i < 360; i+=10) {
+		let major = (i % 30) == 0;
+		out.push({
+		    angle: i,
+		    x: i * $scope.pixelsPerDegree,
+		    height: major ? 20 : 10,
+		    major: major,
+		});
+	    }
+	    return out;
+	}();
     });

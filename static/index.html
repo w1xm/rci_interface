@@ -55,6 +55,12 @@
 		<g ng:attr:class="{{rci.status.CommandElFlags == 'POSITION'?'':'ng-hide'}}" ng:attr:transform="translate({{commandX || 0}} {{commandY || 0}})" stroke="red" stroke-width="2">
 		  <path d="M -10 0 L -1 0 M 1 0 L 10 0 M 0 10 L 0 1 M 0 -1 L 0 -10" />
 		</g>
+		<g stroke-width="2" style="font-size: 200%">
+		  <g ng-repeat="tick in ticks">
+		    <path stroke="white" ng:attr:d="M {{tick.x}} 0 l 0 {{tick.height}}" />
+		    <text fill="white" ng-if="tick.major" ng:attr:x="{{tick.x}}" ng:attr:y="{{tick.height+2}}" dominant-baseline="hanging" text-anchor="middle">{{tick.angle}}&deg;</text>
+		  </g>
+		</g>
 	      </pattern>
 	    </defs>
 	    <g ng-click="panoClick($event)">
