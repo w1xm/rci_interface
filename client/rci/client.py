@@ -2,10 +2,15 @@ import errno
 import json
 import time
 import websocket
+import os
 from threading import Thread, Lock, Condition
 
 class Client(object):
-    def __init__(self, url, password=None):
+    def __init__(self, url=None, password=None):
+        if not url:
+            url = os.getenv("RCI_ADDRESS", "ws://localhost:8502/api/ws")
+        if not password:
+            password = os.getenv("RCI_PASSWORD")
         self._url = url
         self._ws = websocket.WebSocket(enable_multithread=True)
         self._ws.connect(self._url, subprotocols=[password] if password else None)
