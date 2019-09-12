@@ -26,7 +26,7 @@ type Server struct {
 	password string
 }
 
-func NewServer(ctx context.Context, port string, baud int) *Server {
+func NewServer(ctx context.Context, port string, baud int, password string) *Server {
 	handler := modbus.NewRTUClientHandler(port)
 	handler.BaudRate = baud
 	handler.DataBits = 8
@@ -36,6 +36,7 @@ func NewServer(ctx context.Context, port string, baud int) *Server {
 	handler.SlaveId = 1
 	return &Server{
 		handler: handler,
+		password: password,
 	}
 }
 
@@ -52,9 +53,13 @@ func (s *Server) SendHandler(w http.ResponseWriter, r *http.Request) {
 			return err
 		}
 		aduResponse, err := s.handler.Send(aduRequest)
+		var errString string
+		if err != nil {
+			errString = err.Error()
+		}
 		if body, err := json.Marshal(&modbushttp.SendResponse{
 			ADUResponse: aduResponse,
-			Error:       err.Error(),
+			Error:       errString,
 		}); err != nil {
 			return err
 		} else {
@@ -72,7 +77,7 @@ func (s *Server) SendHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	flag.Parse()
 	ctx := context.Background()
-	server := NewServer(ctx, *seqSerialPort, *seqBaud)
+	server := NewServer(ctx, *seqSerialPort, *seqBaud, *password)
 	r := mux.NewRouter()
 	r.Handle("/api/send", http.HandlerFunc(server.SendHandler))
 	r.PathPrefix("/debug").Handler(http.DefaultServeMux)
