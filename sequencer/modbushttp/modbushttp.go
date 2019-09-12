@@ -47,7 +47,10 @@ func (c *Client) Send(aduRequest []byte) ([]byte, error) {
 	if err := json.Unmarshal(body, &sendResponse); err != nil {
 		return nil, err
 	}
-	return sendResponse.ADUResponse, errors.New(sendResponse.Error)
+	if sendResponse.Error != "" {
+		err = errors.New(sendResponse.Error)
+	}
+	return sendResponse.ADUResponse, err
 }
 
 func (c *Client) Connect() error {

@@ -80,7 +80,9 @@ func (s *Sequencer) reconnectLoop(ctx context.Context, port string) {
 			log.Printf("opening %q: %v", port, err)
 			continue
 		}
-		s.watch(ctx)
+		if err := s.watch(ctx); err != nil {
+			log.Printf("watching %q: %v", port, err)
+		}
 	}
 }
 
