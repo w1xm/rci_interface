@@ -280,6 +280,7 @@ angular.module('widgets', [])
 		    'az': scope.azel[0],
 		    'live': true,
 		    'showplanets': true,
+		    'showstarlabels': true,
 		    'gridlines_az': true,
 		    'showgalaxy': true,
 		    'mouse': false,
