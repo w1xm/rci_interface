@@ -1,9 +1,6 @@
 angular.module('app', ['components', 'widgets', 'ngMaterial'])
-    .config(function($mdGestureProvider, $mdThemingProvider) {
+    .config(function($mdGestureProvider) {
 	$mdGestureProvider.skipClickHijack();
-	$mdThemingProvider.theme('dark', 'default')
-	    .primaryPalette('yellow')
-	    .dark();
     })
     .controller('StatusController', function($scope, $locale, RCI) {
 	$scope.rci = RCI;
@@ -78,4 +75,10 @@ angular.module('app', ['components', 'widgets', 'ngMaterial'])
           <div ng-controller="StatusController" style="width: 100%; height: 100%;">
 	    <skymap latitude="rci.status.Latitude" longitude="rci.status.Longitude" azel="[rci.status.AzPos, rci.status.ElPos, true]" targetazel="[rci.status.CommandAzPos, rci.status.CommandElPos, (rci.status.CommandAzFlags == 'POSITION' && rci.status.CommandElFlags == 'POSITION')]" click="setAzElPosition($event)"></skymap>
 	  </div>`,
+    });
+angular.module('dashboard', ['app', 'ngMaterial'])
+    .config(function($mdThemingProvider) {
+	$mdThemingProvider.theme('default')
+	    .primaryPalette('yellow')
+	    .dark();
     });
