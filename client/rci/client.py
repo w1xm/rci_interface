@@ -3,6 +3,9 @@ import json
 import time
 import websocket
 import os
+import os.path
+import sys
+import urllib
 from threading import Thread, Lock, Condition
 
 class Client(object):
@@ -11,6 +14,11 @@ class Client(object):
             url = os.getenv("RCI_ADDRESS", "ws://localhost:8502/api/ws")
         if not password:
             password = os.getenv("RCI_PASSWORD")
+        if '?' in url:
+            url += '&'
+        else:
+            url += '?'
+        url += 'client='+urllib.quote(os.path.basename(sys.argv[0]))
         self._url = url
         self._ws = websocket.WebSocket(enable_multithread=True)
         self._ws.connect(self._url, subprotocols=[password] if password else None)
