@@ -268,13 +268,11 @@ angular.module('widgets', [])
 	    link: function(scope, element, attrs) {
 		const container = document.createElement('div');
 		container.id = 'skymap-' + (nextId++)
-		container.style.width = container.style.height = "1000px";
+		container.style.width = container.style.height = "100%";
 		element.append(container);
 
 		const planetarium = S.virtualsky({
 		    'id': container.id,
-		    'width': 1000,
-		    'height': 1000,
 		    'projection': 'stereo',
 		    'fov': 45,
 		    'az': scope.azel[0],

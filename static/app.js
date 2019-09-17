@@ -69,4 +69,10 @@ angular.module('app', ['components', 'widgets', 'ngMaterial'])
 	    }
 	    return out;
 	}();
+    })
+    .component('rciSkymap', {
+	template: `
+          <div ng-controller="StatusController" style="width: 100%; height: 100%;">
+	    <skymap latitude="rci.status.Latitude" longitude="rci.status.Longitude" azel="[rci.status.AzPos, rci.status.ElPos, true]" targetazel="[rci.status.CommandAzPos, rci.status.CommandElPos, (rci.status.CommandAzFlags == 'POSITION' && rci.status.CommandElFlags == 'POSITION')]" click="setAzElPosition($event)"></skymap>
+	  </div>`,
     });

@@ -2,6 +2,10 @@ section {
     float: left;
 }
 
+rci-skymap {
+    display: block;
+}
+
 /* widgets: knob */
 .panel > .widget-Knob-outer {
   display: block;

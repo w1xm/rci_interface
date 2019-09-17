@@ -43,9 +43,7 @@
 	  </div>
 	</md-tab>
 	<md-tab label="Sky">
-	  <div ng-controller="StatusController">
-	    <skymap latitude="rci.status.Latitude" longitude="rci.status.Longitude" azel="[rci.status.AzPos, rci.status.ElPos, true]" targetazel="[rci.status.CommandAzPos, rci.status.CommandElPos, (rci.status.CommandAzFlags == 'POSITION' && rci.status.CommandElFlags == 'POSITION')]" click="setAzElPosition($event)"></skymap>
-	  </div>
+	  <rci-skymap style="width: 1000px; height: 1000px" />
 	</md-tab>
 	<md-tab label="Ground">
 	  <svg ng-controller="PanoController" width="1000" height="720" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ng-mousedown="$event.preventDefault()" >
