@@ -15,6 +15,11 @@ import (
 	"github.com/w1xm/rci_interface/sequencer"
 )
 
+type AuthorizedClient struct {
+	RemoteAddr string
+	Name       string
+}
+
 type Status struct {
 	SequenceNumber int
 	rci.Status
@@ -24,7 +29,27 @@ type Status struct {
 	OffsetAz, OffsetEl  float64
 	// Authorized is true if the current connection is allowed to mutate state.
 	Authorized          bool
+	AuthorizedClients   []AuthorizedClient
 	Latitude, Longitude float64
+}
+
+func (s Status) Clone() Status {
+	s.Bodies = append([]string{}, s.Bodies...)
+	s.AuthorizedClients = append([]AuthorizedClient{}, s.AuthorizedClients...)
+	return s
+}
+
+func (s *Status) AddAuthorizedClient(c AuthorizedClient) {
+	s.AuthorizedClients = append(s.AuthorizedClients, c)
+}
+
+func (s *Status) RemoveAuthorizedClient(c AuthorizedClient) {
+	for i, c2 := range s.AuthorizedClients {
+		if c2 == c {
+			s.AuthorizedClients = append(s.AuthorizedClients[:i], s.AuthorizedClients[i+1:]...)
+			return
+		}
+	}
 }
 
 type Server struct {
@@ -115,7 +140,7 @@ var upgrader = websocket.Upgrader{
 
 func (s *Server) StatusHandler(w http.ResponseWriter, r *http.Request) {
 	s.statusMu.RLock()
-	status := s.status
+	status := s.status.Clone()
 	s.statusMu.RUnlock()
 	w.Header().Set("Content-Type", "application/json")
 	data, err := json.Marshal(status)
@@ -208,6 +233,7 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 		headers = http.Header{"Sec-WebSocket-Protocol": []string{s.password}}
 	}
 
+	clientName := r.FormValue("client")
 	highres := r.FormValue("highres") != ""
 	throttle := r.FormValue("throttle") != ""
 
@@ -219,13 +245,29 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 
 	auth := isLocal(r) || s.isAuth(r)
 
-	log.Printf("New client from %q, highres: %v throttle: %v", r.RemoteAddr, highres, throttle)
+	log.Printf("New client %q from %q, highres: %v throttle: %v", clientName, r.RemoteAddr, highres, throttle)
+
+	authClient := AuthorizedClient{
+		RemoteAddr: r.RemoteAddr,
+		Name:       clientName,
+	}
+
+	if auth {
+		s.statusMu.Lock()
+		s.status.AddAuthorizedClient(authClient)
+		s.statusMu.Unlock()
+	}
 
 	t := &ThrottledTimer{period: 25 * time.Millisecond, throttle: throttle}
 	t.cond = sync.NewCond(&t.mu)
 
 	// Read and process incoming messages
 	go func() {
+		defer func() {
+			s.statusMu.Lock()
+			defer s.statusMu.Unlock()
+			s.status.RemoveAuthorizedClient(authClient)
+		}()
 		for {
 			var msg Command
 			if err := conn.ReadJSON(&msg); err != nil {
@@ -324,7 +366,7 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.statusMu.RLock()
-	status := s.status
+	status := s.status.Clone()
 	s.statusMu.RUnlock()
 	send(status)
 
@@ -339,7 +381,7 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 			default:
 			}
 			s.statusCond.Wait()
-			status = s.status
+			status = s.status.Clone()
 			select {
 			case c <- struct{}{}:
 			default:

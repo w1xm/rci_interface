@@ -95,7 +95,7 @@ angular.module('components', [
 	    }
 	    // Open a WebSocket connection
 	    obj.socket = $websocket(
-		'ws://'+host+'/api/ws?throttle=1', protocols, {
+		'ws://'+host+'/api/ws?throttle=1&client=web', protocols, {
 		    reconnectIfNotNormalClose: true,
 		});
 
