@@ -1,6 +1,9 @@
 angular.module('app', ['components', 'widgets', 'ngMaterial'])
-    .config(function($mdGestureProvider) {
+    .config(function($mdGestureProvider, $mdThemingProvider) {
 	$mdGestureProvider.skipClickHijack();
+	$mdThemingProvider.theme('dark', 'default')
+	    .primaryPalette('yellow')
+	    .dark();
     })
     .controller('StatusController', function($scope, $locale, RCI) {
 	$scope.rci = RCI;
