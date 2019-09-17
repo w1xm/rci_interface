@@ -6,6 +6,15 @@ rci-skymap {
     display: block;
 }
 
+/* dashboard */
+.dashboard .more-info md-card-content {
+    text-align: center;
+}
+.dashboard .more-info a {
+    color: inherit;
+    font-size: 1.7vw;
+}
+
 /* widgets: knob */
 .panel > .widget-Knob-outer {
   display: block;
