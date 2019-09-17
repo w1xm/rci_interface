@@ -2,7 +2,7 @@ section {
     float: left;
 }
 
-rci-skymap {
+rci-skymap, pano {
     display: block;
 }
 

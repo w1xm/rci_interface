@@ -18,7 +18,14 @@
   <body class="dashboard">
     <div layout="row" style="height: 100%">
       <div flex="" style="height: 100%">
-	<rci-skymap style="width: 100%; height: 100%" />
+	<div layout="column" style="height: 100%">
+	  <div flex="66">
+	    <rci-skymap style="width: 100%; height: 100%" />
+	  </div>
+	  <div flex="33">
+	    <pano style="height: 100%" />
+	  </div>
+	</div>
       </div>
       <div flex="20" ng-controller="StatusController">
 	<md-card>

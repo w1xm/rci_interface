@@ -46,26 +46,7 @@
 	  <rci-skymap style="width: 1000px; height: 1000px" />
 	</md-tab>
 	<md-tab label="Ground">
-	  <svg ng-controller="PanoController" width="1000" height="720" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ng-mousedown="$event.preventDefault()" >
-	    <defs>
-	      <pattern id="pano" ng:attr:x="{{panoShift || 0}}px" width="5629" height="720" patternUnits="userSpaceOnUse">
-		<image href="pano-night.jpg" xlink:href="pano-night.jpg" />
-		<g ng:attr:class="{{rci.status.CommandElFlags == 'POSITION'?'':'ng-hide'}}" ng:attr:transform="translate({{commandX || 0}} {{commandY || 0}})" stroke="red" stroke-width="2">
-		  <path d="M -10 0 L -1 0 M 1 0 L 10 0 M 0 10 L 0 1 M 0 -1 L 0 -10" />
-		</g>
-		<g stroke-width="2" style="font-size: 200%">
-		  <g ng-repeat="tick in ticks">
-		    <path stroke="white" ng:attr:d="M {{tick.x}} 0 l 0 {{tick.height}}" />
-		    <text fill="white" ng-if="tick.major" ng:attr:x="{{tick.x}}" ng:attr:y="{{tick.height+2}}" dominant-baseline="hanging" text-anchor="middle">{{tick.angle}}&deg;</text>
-		  </g>
-		</g>
-	      </pattern>
-	    </defs>
-	    <g ng-click="panoClick($event)">
-	      <rect width="1000" height="720" fill="url(#pano)" />
-	      <circle stroke="black" fill="none" cx="500" ng:attr:cy="{{statusY || 0}}" r="47" stroke-width="2" />
-	    </g>
-	  </svg>
+	  <pano style="width: 1000px; height: 720px;" />
 	</md-tab>
       </md-tabs>
     </section>
