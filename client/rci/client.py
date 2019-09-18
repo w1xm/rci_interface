@@ -9,7 +9,7 @@ import urllib
 from threading import Thread, Lock, Condition
 
 class Client(object):
-    def __init__(self, url=None, password=None):
+    def __init__(self, url=None, password=None, client_name=None):
         if not url:
             url = os.getenv("RCI_ADDRESS", "ws://localhost:8502/api/ws")
         if not password:
@@ -18,7 +18,9 @@ class Client(object):
             url += '&'
         else:
             url += '?'
-        url += 'client='+urllib.quote(os.path.basename(sys.argv[0]))
+        if not client_name:
+            client_name = os.path.basename(sys.argv[0])
+        url += 'client='+urllib.quote(client_name)
         self._url = url
         self._ws = websocket.WebSocket(enable_multithread=True)
         self._ws.connect(self._url, subprotocols=[password] if password else None)
