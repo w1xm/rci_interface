@@ -351,9 +351,10 @@ angular.module('widgets', [])
 		});
 		scope.$watch('longitude', function(lon) {
 		    planetarium.setLongitude(lon);
+		    planetarium.advanceTime();
 		});
 		let updateAzel = function(pointer, azel) {
-		    if (!azel[2]) {
+		    if (!azel[2] || azel[0] === undefined || azel[1] === undefined) {
 			planetarium.pointers[pointer].ra = planetarium.pointers[pointer].dec = 0;
 			planetarium.draw();
 			return;
