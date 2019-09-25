@@ -363,6 +363,7 @@ angular.module('widgets', [])
 		    let radec = planetarium.azel2radec(azel[0]*planetarium.d2r, azel[1]*planetarium.d2r);
 		    planetarium.pointers[pointer].ra = radec.ra;
 		    planetarium.pointers[pointer].dec = radec.dec;
+		    planetarium.resize();
 		    planetarium.draw();
 		};
 		scope.$watch('azel', updateAzel.bind(undefined, pointerStatus));

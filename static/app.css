@@ -2,8 +2,9 @@ section {
     float: left;
 }
 
-rci-skymap, pano {
-    display: block;
+rci-skymap, skymap, pano {
+    display: flex;
+    height: 100%;
 }
 
 /* dashboard */

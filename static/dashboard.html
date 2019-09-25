@@ -15,19 +15,13 @@
     <script src="app.js"></script>
     <link rel="stylesheet" href="app.css" />
   </head>
-  <body class="dashboard">
-    <div layout="row" style="height: 100%">
-      <div flex="" style="height: 100%">
-	<div layout="column" style="height: 100%">
-	  <div flex="66">
-	    <rci-skymap style="width: 100%; height: 100%" />
-	  </div>
-	  <div flex="33">
-	    <pano style="height: 100%" />
-	  </div>
-	</div>
+  <body class="dashboard" layout="column">
+    <div flex="grow" layout="row">
+      <div flex="" layout="column">
+	<rci-skymap layout="column" flex="66"></rci-skymap>
+	<pano layout="column" flex="33"></pano>
       </div>
-      <div flex="20" ng-controller="StatusController">
+      <div ng-controller="StatusController">
 	<md-card>
 	  <md-card-header>
 	    <md-card-header-text>
@@ -88,6 +82,21 @@
 	    <a href="http://w1xm.mit.edu/">http://w1xm.mit.edu/</a>
 	  </md-card-content>
 	</md-card>
+      </div>
+    </div>
+    <div>
+      <md-card>
+	<md-card-content>
+	  <p>The Green Building roof has housed the experimental
+	    WR-66 weather radar since shortly after the building's
+	    construction in 1964. After almost four decades of
+	    weather research, including as the first NEXRAD
+	    prototype, the radar system is now student-run and
+	    student-maintained. Today, the MIT Radio Society uses
+	    the radar system for Earth-Moon-Earth communication,
+	    radioastronomy, and passive Doppler radar research.</p>
+	</md-card-content>
+      </md-card>
     </div>
   </body>
 </html>
