@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"flag"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -15,7 +17,7 @@ import (
 var (
 	addr          = flag.String("addr", "127.0.0.1:8502", "address to listen on")
 	rotctldAddr   = flag.String("rotctld_addr", "127.0.0.1:4533", "address to listen for rotctld commands on")
-	password      = flag.String("password", "", "password to require on remote connections")
+	passwordFile  = flag.String("password_file", "", "file containing passwords (one per line) to require on remote connections")
 	staticDir     = flag.String("static_dir", "static", "directory containing static files")
 	serialPort    = flag.String("serial", "", "RCI serial port name")
 	latitude      = flag.Float64("latitude", 42.360326, "latitude of antenna")
@@ -37,11 +39,35 @@ func MaxAge(h http.Handler) http.Handler {
 	})
 }
 
+func readLines(path string) []string {
+	f, err := os.Open(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	var out []string
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line != "" {
+			out = append(out, line)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+	return out
+}
+
 func main() {
 	flag.Parse()
 	ctx := context.Background()
 	place := novas.NewPlace(*latitude, *longitude, *height, *temperature, *pressure)
-	server, err := NewServer(ctx, *serialPort, *password, *latitude, *longitude, place, *azOffset, *elOffset, *seqURL, *seqSerialPort, *seqBaud)
+	var passwords []string
+	if *passwordFile != "" {
+		passwords = readLines(*passwordFile)
+	}
+	server, err := NewServer(ctx, *serialPort, passwords, *latitude, *longitude, place, *azOffset, *elOffset, *seqURL, *seqSerialPort, *seqBaud)
 	if err != nil {
 		log.Fatal(err)
 	}

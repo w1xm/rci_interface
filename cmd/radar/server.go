@@ -53,26 +53,26 @@ func (s *Status) RemoveAuthorizedClient(c AuthorizedClient) {
 }
 
 type Server struct {
-	password string
-	place    *novas.Place
-	mu       sync.Mutex
-	r        *rci.Offset
-	bodies   []*novas.Body
-	seq      *sequencer.Sequencer
+	passwords []string
+	place     *novas.Place
+	mu        sync.Mutex
+	r         *rci.Offset
+	bodies    []*novas.Body
+	seq       *sequencer.Sequencer
 
 	statusMu   sync.RWMutex
 	statusCond *sync.Cond
 	status     Status
 }
 
-func NewServer(ctx context.Context, port string, password string, latitude, longitude float64, place *novas.Place, azOffset, elOffset float64, sequencerURL string, sequencerPort string, sequencerBaud int) (*Server, error) {
+func NewServer(ctx context.Context, port string, passwords []string, latitude, longitude float64, place *novas.Place, azOffset, elOffset float64, sequencerURL string, sequencerPort string, sequencerBaud int) (*Server, error) {
 	s := &Server{
 		status: Status{
 			Latitude:  latitude,
 			Longitude: longitude,
 		},
-		place:    place,
-		password: password,
+		place:     place,
+		passwords: passwords,
 	}
 	s.statusCond = sync.NewCond(s.statusMu.RLocker())
 	r, err := rci.ConnectOffset(ctx, port, s.statusCallback, azOffset, elOffset)
@@ -215,12 +215,17 @@ func isLocal(r *http.Request) bool {
 	return false
 }
 
-func (s *Server) isAuth(r *http.Request) bool {
+func (s *Server) isAuth(r *http.Request) (string, bool) {
 	protocols := websocket.Subprotocols(r)
 	if len(protocols) < 1 {
-		return false
+		return "", false
 	}
-	return protocols[0] == s.password
+	for _, p := range s.passwords {
+		if p == protocols[0] {
+			return p, true
+		}
+	}
+	return "", false
 }
 
 func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
@@ -229,8 +234,9 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	var headers http.Header
-	if s.isAuth(r) {
-		headers = http.Header{"Sec-WebSocket-Protocol": []string{s.password}}
+	password, auth := s.isAuth(r)
+	if auth {
+		headers = http.Header{"Sec-WebSocket-Protocol": []string{password}}
 	}
 
 	clientName := r.FormValue("client")
@@ -243,7 +249,7 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	auth := isLocal(r) || s.isAuth(r)
+	auth = auth || isLocal(r)
 
 	log.Printf("New client %q from %q, highres: %v throttle: %v", clientName, r.RemoteAddr, highres, throttle)
 
