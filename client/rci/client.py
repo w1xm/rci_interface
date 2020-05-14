@@ -1,3 +1,7 @@
+# Prepare for Python 3
+from __future__ import (absolute_import, division, print_function)
+__metaclass__ = type
+
 import errno
 import json
 import time
@@ -5,7 +9,10 @@ import websocket
 import os
 import os.path
 import sys
-import urllib
+try:
+    from urllib import quote  # Python 2.X
+except ImportError:
+    from urllib.parse import quote  # Python 3+
 from threading import Thread, Lock, Condition
 
 class Client(object):
@@ -20,7 +27,7 @@ class Client(object):
             url += '?'
         if not client_name:
             client_name = os.path.basename(sys.argv[0])
-        url += 'client='+urllib.quote(client_name)
+        url += 'client='+quote(client_name)
         self._url = url
         self._ws = websocket.WebSocket(enable_multithread=True)
         self._ws.connect(self._url, subprotocols=[password] if password else None)
@@ -239,4 +246,4 @@ if __name__ == "__main__":
     client = Client("ws://w1xm-radar-1.mit.edu:8502/api/ws")
     
     time.sleep(1)
-    print client
+    print(client)
