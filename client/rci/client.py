@@ -212,6 +212,14 @@ class Client(object):
                 self._cv.wait()
             return self._status
 
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        with self._cv:
+            self._cv.wait()
+            return self._status
+
     def add_star(self, starname, catalog, starnumber, ra, dec, promora, promodec, parallax, radialvelocity):
         """Add a star to the list of known bodies.
 
