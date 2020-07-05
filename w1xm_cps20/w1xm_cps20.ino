@@ -52,12 +52,12 @@ void setup(){ // the setup routine runs once:
 }
 
 // millis wrap every 50 days.
-unsigned long onMillis[RELAYS] = 0;
+unsigned long onMillis[RELAYS] = {0};
 
 void loop(){  // the loop routine runs over and over again forever:
   bool switchState = digitalRead(SWITCH_BUILTIN);//Read the state of the switch
 
-  unsigned long confirmation_delay = mb.Hreg(0);
+  unsigned long confirmation_delay = mb.Hreg(0) * 1000;
 
   // Every time through the loop, we recompute the desired output
   // state from the current values of the Modbus coils.
@@ -90,7 +90,7 @@ void loop(){  // the loop routine runs over and over again forever:
   }
   bool all_on = true;
   for (int i = 0; i < RELAYS; i++) {
-    all_on &&= mb.Ists(1+i);
+    all_on = all_on && mb.Ists(1+i);
   }
   mb.Ists(0, all_on); // Expose on discrete input 0
 }
