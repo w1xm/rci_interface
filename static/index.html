@@ -74,7 +74,14 @@
 	      <div ng-if="rci.status.Simulator">Simulator</div>
 	      <div ng-if="rci.status.BadCommand">Bad Command</div>
 	      <div ng-if="rci.status.HostOkay">Host Okay</div>
+	      <div ng-if="rci.status.Moving">Moving</div>
+	      <div ng-if="rci.status.MovingDisabled">Moving Disabled</div>
 	      <div ng-if="rci.status.ShutdownError">Shutdown {{rci.status.ShutdownError|shutdown}}<button ng-click="rci.exitShutdown()">Exit Shutdown</button></div>
+	</td></tr>
+	<tr><th>Amplidynes</th><td>
+	    <div ng-if="rci.status.Amplidynes.AzActive">Azimuth Active</div>
+	    <div ng-if="rci.status.Amplidynes.ElActive">Elevation Active</div>
+	    <div ng-if="rci.status.Amplidynes.AmplidynesActive">Amplidynes Okay</div>
 	</td></tr>
 	<tr><th>Sequencer TX</th><td>
 	    <span ng-repeat="band in rci.status.Sequencer.Bands"><span ng-if="band.TX">Band {{$index}}</span>
@@ -83,6 +90,11 @@
 	<tr><th colspan="2">Command</th></tr>
 	<tr><th>Raw</th><td>{{rci.status.WriteRegisters | hex}}</td></tr>
 	<tr><th>Diag</th><td>{{rci.status.CommandDiag}}</td></tr>
+	<tr><th>Amplidynes</th><td>
+	    <div ng-if="rci.status.Amplidynes.CommandAzEnabled">Azimuth Enabled</div>
+	    <div ng-if="rci.status.Amplidynes.CommandElEnabled">Elevation Enabled</div>
+	    <div>{{rci.status.Amplidynes.CommandSpinupDelay}} second spinup delay</div>
+	</td></tr>
 	<tr><th>Azimuth</th><td>
 	    {{rci.status.CommandAzFlags}}<br />
 	    <knob ng-model="rci.status.CommandAzPos" unit="°" writable="true" min="0" max="360" wrap="true" ng-change="rci.setAzimuthPosition(rci.status.CommandAzPos)" active="rci.status.CommandAzFlags == 'POSITION'"></knob><br />
