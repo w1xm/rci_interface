@@ -4,13 +4,9 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	"log"
-	"os"
 	"sync"
-	"time"
 
-	"github.com/goburrow/modbus"
-	"github.com/w1xm/rci_interface/sequencer/modbushttp"
+	"github.com/w1xm/rci_interface/internal/modbus"
 )
 
 type Band struct {
@@ -26,78 +22,36 @@ type Status struct {
 
 type StatusCallback func(status Status)
 
-type modbusHandler interface {
-	modbus.ClientHandler
-	Connect() error
-	Close() error
-}
-
 type Sequencer struct {
-	handler        modbusHandler
 	statusCallback StatusCallback
 	mu             sync.Mutex
-	client         modbus.Client
+	client         *modbus.Client
 	bands          int
 	coils          []bool
 	inputs         []bool
 }
 
 func Connect(ctx context.Context, port string, baud int, statusCallback StatusCallback) (*Sequencer, error) {
-	handler := modbus.NewRTUClientHandler(port)
-	handler.BaudRate = baud
-	handler.DataBits = 8
-	handler.Parity = "N"
-	handler.StopBits = 1
-	handler.Timeout = 1 * time.Second
-	handler.SlaveId = 1
-	return newSequencer(ctx, handler, port, statusCallback)
+	s := &Sequencer{
+		client: &modbus.Client{
+			Port:     port,
+			BaudRate: baud,
+			SlaveId:  1,
+		},
+		statusCallback: statusCallback,
+	}
+	s.client.Poll = s.pollOnce
+	return s, s.client.Connect(ctx)
 }
 
 func ConnectRemote(ctx context.Context, url string, statusCallback StatusCallback) (*Sequencer, error) {
-	handler := modbushttp.NewClient(url)
-	return newSequencer(ctx, handler, url, statusCallback)
-}
-
-func newSequencer(ctx context.Context, handler modbusHandler, port string, statusCallback StatusCallback) (*Sequencer, error) {
-	_ = os.Stderr
-	//handler.Logger = log.New(os.Stderr, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.Llongfile)
-	client := modbus.NewClient(handler)
-	s := &Sequencer{handler: handler, client: client, statusCallback: statusCallback}
-	go s.reconnectLoop(ctx, port)
-	return s, nil
-}
-
-func (s *Sequencer) reconnectLoop(ctx context.Context, port string) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-time.After(1 * time.Second):
-		}
-
-		err := s.handler.Connect()
-		if err != nil {
-			log.Printf("opening %q: %v", port, err)
-			continue
-		}
-		if err := s.watch(ctx); err != nil {
-			log.Printf("watching %q: %v", port, err)
-		}
+	s := &Sequencer{
+		client: &modbus.Client{
+			URL: url,
+		},
+		statusCallback: statusCallback,
 	}
-}
-
-func (s *Sequencer) watch(ctx context.Context) error {
-	defer s.handler.Close()
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
-		if err := s.pollOnce(); err != nil {
-			return err
-		}
-	}
+	return s, s.client.Connect(ctx)
 }
 
 func (s *Sequencer) pollOnce() error {
@@ -117,20 +71,10 @@ func (s *Sequencer) pollOnce() error {
 		return err
 	}
 	s.bands = int(bands)
-	s.coils = bytesToBits(coils)
-	s.inputs = bytesToBits(inputs)
+	s.coils = modbus.BytesToBits(coils)
+	s.inputs = modbus.BytesToBits(inputs)
 	s.notifyStatus()
 	return nil
-}
-
-func bytesToBits(bs []byte) []bool {
-	var out []bool
-	for _, b := range bs {
-		for i := 0; i < 8; i++ {
-			out = append(out, (b>>uint(i)&1) == 1)
-		}
-	}
-	return out
 }
 
 func (s *Sequencer) notifyStatus() {
@@ -152,22 +96,13 @@ func (s *Sequencer) parseRegisters() Status {
 	return status
 }
 
-func (s *Sequencer) writeCoil(coil int, value bool) error {
-	var v uint16
-	if value {
-		v = 0xFF00
-	}
-	_, err := s.client.WriteSingleCoil(uint16(coil), v)
-	return err
-}
-
 func (s *Sequencer) SetBandTX(band int, tx bool) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if band >= s.bands {
 		return fmt.Errorf("invalid band %d", band)
 	}
-	return s.writeCoil(band, tx)
+	return s.client.WriteCoil(band, tx)
 }
 func (s *Sequencer) SetBandRX(band int, rx bool) error {
 	s.mu.Lock()
@@ -175,5 +110,5 @@ func (s *Sequencer) SetBandRX(band int, rx bool) error {
 	if band >= s.bands {
 		return fmt.Errorf("invalid band %d", band)
 	}
-	return s.writeCoil(s.bands+band, rx)
+	return s.client.WriteCoil(s.bands+band, rx)
 }
