@@ -2,6 +2,7 @@ package modbus
 
 import (
 	"context"
+	"errors"
 	"log"
 	"os"
 	"time"
@@ -33,6 +34,9 @@ type Client struct {
 }
 
 func (c *Client) Connect(ctx context.Context) error {
+	if c.Poll == nil {
+		return errors.New("Poll function not specified")
+	}
 	if c.URL != "" {
 		c.handler = modbushttp.NewClient(c.URL)
 	} else {

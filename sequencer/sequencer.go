@@ -51,6 +51,7 @@ func ConnectRemote(ctx context.Context, url string, statusCallback StatusCallbac
 		},
 		statusCallback: statusCallback,
 	}
+	s.client.Poll = s.pollOnce
 	return s, s.client.Connect(ctx)
 }
 
