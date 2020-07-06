@@ -245,7 +245,7 @@ func (r *RCI) SetMovingDisabled(blocked bool) {
 	} else if !blocked && r.blockedMoves != nil {
 		r.mu.Lock()
 		bm := r.blockedMoves
-		r.blockedMoves = bm
+		r.blockedMoves = nil
 		r.mu.Unlock()
 		if len(bm) > 0 {
 			r.lastDiag++
