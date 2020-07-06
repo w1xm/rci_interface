@@ -191,14 +191,18 @@ func (s *Server) trackLoop(ctx context.Context) {
 			return
 		case <-time.After(250 * time.Millisecond):
 		}
+		var stopAmplidynes bool
 		s.mu.Lock()
 		s.statusMu.RLock()
 		command := s.status.CommandTrackingBody
 		if command == 0 && time.Since(s.status.LastMoveTime) > 30*time.Minute && (s.status.Amplidynes.CommandAzEnabled || s.status.Amplidynes.CommandElEnabled) {
+			stopAmplidynes = true
 			// 30 minutes after last movement command, stop the amplidynes.
-			s.setAmplidynesEnabled(false)
 		}
 		s.statusMu.RUnlock()
+		if stopAmplidynes {
+			s.setAmplidynesEnabled(false)
+		}
 		if command > 0 && command <= len(s.bodies) {
 			body := s.bodies[command-1]
 			topo := body.Topo(novas.Now(), s.place, novas.REFR_NONE)
