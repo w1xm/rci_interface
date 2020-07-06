@@ -36,7 +36,7 @@ func Connect(ctx context.Context, port string, baud int, statusCallback StatusCa
 		client: &modbus.Client{
 			Port:     port,
 			BaudRate: baud,
-			SlaveId:  1,
+			SlaveId:  20,
 		},
 		statusCallback: statusCallback,
 	}
