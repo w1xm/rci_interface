@@ -11,6 +11,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/pebbe/novas"
+	"github.com/w1xm/rci_interface/cps20"
 	"github.com/w1xm/rci_interface/rci"
 	"github.com/w1xm/rci_interface/sequencer"
 )
@@ -23,7 +24,9 @@ type AuthorizedClient struct {
 type Status struct {
 	SequenceNumber int
 	rci.Status
+	LastMoveTime        time.Time
 	Sequencer           sequencer.Status
+	Amplidynes          cps20.Status
 	CommandTrackingBody int
 	Bodies              []string
 	OffsetAz, OffsetEl  float64
@@ -59,13 +62,14 @@ type Server struct {
 	r         *rci.Offset
 	bodies    []*novas.Body
 	seq       *sequencer.Sequencer
+	cps20     *cps20.CPS20
 
 	statusMu   sync.RWMutex
 	statusCond *sync.Cond
 	status     Status
 }
 
-func NewServer(ctx context.Context, port string, passwords []string, latitude, longitude float64, place *novas.Place, azOffset, elOffset float64, sequencerURL string, sequencerPort string, sequencerBaud int) (*Server, error) {
+func NewServer(ctx context.Context, port string, passwords []string, latitude, longitude float64, place *novas.Place, azOffset, elOffset float64, sequencerURL string, sequencerPort string, sequencerBaud int, cps20Port string) (*Server, error) {
 	s := &Server{
 		status: Status{
 			Latitude:  latitude,
@@ -85,6 +89,10 @@ func NewServer(ctx context.Context, port string, passwords []string, latitude, l
 	} else {
 		s.seq, err = sequencer.Connect(ctx, sequencerPort, sequencerBaud, s.sequencerStatusCallback)
 	}
+	if err != nil {
+		return nil, err
+	}
+	s.cps20, err = cps20.Connect(ctx, cps20Port, 19200, s.cps20StatusCallback)
 	if err != nil {
 		return nil, err
 	}
@@ -186,6 +194,10 @@ func (s *Server) trackLoop(ctx context.Context) {
 		s.mu.Lock()
 		s.statusMu.RLock()
 		command := s.status.CommandTrackingBody
+		if command == 0 && time.Since(s.status.LastMoveTime) > 30*time.Minute && (s.status.Amplidynes.CommandAzEnabled || s.status.Amplidynes.CommandElEnabled) {
+			// 30 minutes after last movement command, stop the amplidynes.
+			s.setAmplidynesEnabled(false)
+		}
 		s.statusMu.RUnlock()
 		if command > 0 && command <= len(s.bodies) {
 			body := s.bodies[command-1]
@@ -291,6 +303,7 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			s.mu.Lock()
+			s.setAmplidynesEnabled(true)
 			switch msg.Command {
 			case "track":
 				s.track(msg.Body)
@@ -462,4 +475,29 @@ func (s *Server) sequencerStatusCallback(status sequencer.Status) {
 	defer s.statusMu.Unlock()
 	s.status.Sequencer = status
 	s.statusCond.Broadcast()
+}
+
+func (s *Server) cps20StatusCallback(status cps20.Status) {
+	// If amplidynes are not running, immediately stop the RCI.
+	s.r.SetMovingDisabled(!status.AmplidynesActive)
+
+	s.statusMu.Lock()
+	defer s.statusMu.Unlock()
+	s.status.Amplidynes = status
+	s.statusCond.Broadcast()
+}
+
+func (s *Server) setAmplidynesEnabled(enabled bool) {
+	if enabled {
+		s.statusMu.Lock()
+		s.status.LastMoveTime = time.Now()
+		s.statusMu.Unlock()
+		s.cps20.SetAmplidynesEnabled(true)
+		// Confirmation path will enable RCI
+	} else {
+		// Immediately stop RCI before we spin down the amplidynes
+		// TODO: Should there be an extra delay here?
+		s.r.SetMovingDisabled(true)
+		s.cps20.SetAmplidynesEnabled(false)
+	}
 }

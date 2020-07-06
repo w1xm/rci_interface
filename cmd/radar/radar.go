@@ -30,6 +30,7 @@ var (
 	seqSerialPort = flag.String("sequencer_serial", "", "sequencer serial port name")
 	seqURL        = flag.String("sequencer_url", "", "remote sequencer URL")
 	seqBaud       = flag.Int("sequencer_baud", 19200, "sequencer baud rate")
+	cpsSerialPort = flag.String("cps20_serial", "", "CPS20 serial port name")
 )
 
 func MaxAge(h http.Handler) http.Handler {
@@ -67,7 +68,7 @@ func main() {
 	if *passwordFile != "" {
 		passwords = readLines(*passwordFile)
 	}
-	server, err := NewServer(ctx, *serialPort, passwords, *latitude, *longitude, place, *azOffset, *elOffset, *seqURL, *seqSerialPort, *seqBaud)
+	server, err := NewServer(ctx, *serialPort, passwords, *latitude, *longitude, place, *azOffset, *elOffset, *seqURL, *seqSerialPort, *seqBaud, *cpsSerialPort)
 	if err != nil {
 		log.Fatal(err)
 	}

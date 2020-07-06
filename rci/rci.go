@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -38,6 +39,10 @@ type Status struct {
 	BadCommand      bool
 	HostOkay        bool
 	ShutdownError   uint8
+	// Moving indicates whether there is a pending move that has not yet completed.
+	Moving bool
+	// MovingDisabled indicates that move commands are current disabled (e.g. because amplidynes are not running).
+	MovingDisabled bool
 
 	WriteRegisters                 [11]uint16
 	CommandDiag                    uint16
@@ -63,8 +68,15 @@ func regToFlags(reg uint16) string {
 	return "UNKNOWN"
 }
 
+const VELOCITY_QUIESCENT = 0.2
+
 func (r *RCI) parseRegisters() Status {
 	registers := r.readRegisters
+	writeRegisters := r.writeRegisters
+	for k, v := range r.blockedMoves {
+		// Pretend blocked moves are happening
+		writeRegisters[k] = v
+	}
 	status := Status{
 		RawRegisters: registers,
 		Diag:         registers[0],
@@ -75,20 +87,20 @@ func (r *RCI) parseRegisters() Status {
 		AzVel:        regToSigned(registers[3]),
 		ElVel:        regToSigned(registers[4]),
 
-		WriteRegisters: r.writeRegisters,
-		CommandDiag:    r.writeRegisters[0],
-		CommandAzPos:   360 * float64(r.writeRegisters[1]) / 65536,
-		CommandAzVel:   regToSigned(r.writeRegisters[2]),
-		CommandElPos:   360 * float64(r.writeRegisters[4]) / 65536,
-		CommandElVel:   regToSigned(r.writeRegisters[5]),
-		CommandAzFlags: regToFlags(r.writeRegisters[3]),
-		CommandElFlags: regToFlags(r.writeRegisters[6]),
+		WriteRegisters: writeRegisters,
+		CommandDiag:    writeRegisters[0],
+		CommandAzPos:   360 * float64(writeRegisters[1]) / 65536,
+		CommandAzVel:   regToSigned(writeRegisters[2]),
+		CommandElPos:   360 * float64(writeRegisters[4]) / 65536,
+		CommandElVel:   regToSigned(writeRegisters[5]),
+		CommandAzFlags: regToFlags(writeRegisters[3]),
+		CommandElFlags: regToFlags(writeRegisters[6]),
 	}
 	for i := range status.Status {
 		status.Status[i] = ((registers[5+(i/16)] >> (uint(i) % 16)) & 1) == 1
 	}
 	for i := range status.CommandStatus {
-		status.CommandStatus[i] = ((r.writeRegisters[5+(i/8)] >> (uint(i) % 8)) & 1) == 1
+		status.CommandStatus[i] = ((writeRegisters[5+(i/8)] >> (uint(i) % 8)) & 1) == 1
 	}
 	flags := registers[8]
 	status.LocalMode = flags&1 != 0
@@ -99,6 +111,9 @@ func (r *RCI) parseRegisters() Status {
 	status.BadCommand = flags&32 != 0
 	status.HostOkay = flags&64 != 0
 	status.ShutdownError = uint8(flags >> 10)
+
+	status.Moving = len(r.blockedMoves) > 0 || ((status.CommandAzFlags != "NONE" || status.CommandElFlags != "NONE") && status.ShutdownError != 0) || math.Abs(status.AzVel) > VELOCITY_QUIESCENT || math.Abs(status.ElVel) > VELOCITY_QUIESCENT
+	status.MovingDisabled = r.blockedMoves != nil
 	return status
 }
 
@@ -111,6 +126,8 @@ type RCI struct {
 	readRegisters  [12]uint16
 	writeRegisters [11]uint16
 	lastDiag       uint16
+	// blockedMoves is non-nil when moves are being blocked
+	blockedMoves map[int]uint16
 }
 
 func Connect(ctx context.Context, port string, statusCallback StatusCallback) (*RCI, error) {
@@ -189,6 +206,12 @@ func (r *RCI) Write(register int, values ...uint16) {
 	}
 	out := []string{fmt.Sprintf("%x", register)}
 	for i, v := range values {
+		if r.blockedMoves != nil {
+			if register+i == 3 || register+i == 6 {
+				r.blockedMoves[register+i] = v
+				v = SERVO_NONE
+			}
+		}
 		r.writeRegisters[register+i] = v
 		out = append(out, fmt.Sprintf("%x", v))
 	}
@@ -205,6 +228,34 @@ const (
 	SERVO_POSITION uint16 = 1
 	SERVO_VELOCITY uint16 = 2
 )
+
+func (r *RCI) SetMovingDisabled(blocked bool) {
+	if blocked && r.blockedMoves == nil {
+		r.mu.Lock()
+		bm := map[int]uint16{
+			3: r.writeRegisters[3],
+			6: r.writeRegisters[6],
+		}
+		r.blockedMoves = bm
+		r.mu.Unlock()
+		for k, v := range bm {
+			// Write will turn SERVO_* into SERVO_NONE
+			r.Write(k, v)
+		}
+	} else if !blocked && r.blockedMoves != nil {
+		r.mu.Lock()
+		bm := r.blockedMoves
+		r.blockedMoves = bm
+		r.mu.Unlock()
+		if len(bm) > 0 {
+			r.lastDiag++
+			r.Write(0, r.lastDiag)
+			for k, v := range bm {
+				r.Write(k, v)
+			}
+		}
+	}
+}
 
 func (r *RCI) Stop() {
 	r.lastDiag++
