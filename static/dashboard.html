@@ -15,71 +15,67 @@
     <script src="app.js"></script>
     <link rel="stylesheet" href="app.css" />
   </head>
-  <body class="dashboard" layout="column">
-    <div flex="grow" layout="row">
-      <div flex="" layout="column">
-	<rci-skymap layout="column" flex="66"></rci-skymap>
-	<pano layout="column" flex="33"></pano>
-      </div>
-      <div ng-controller="StatusController">
-	<md-card>
-	  <md-card-header>
-	    <md-card-header-text>
-	      <span class="md-title">Current Activity</span>
-	    </md-card-header-text>
-	  </md-card-header>
-	  <md-card-content>
-	    <div ng-if="!rci.status.AuthorizedClients.length">Idle</div>
-	    <span ng-repeat="client in rci.status.AuthorizedClients">{{client.Name}}<i ng-if="!client.Name">unknown</i><span ng-if="!$last">, </span></span>
-	  </md-card-content>
+  <body class="dashboard">
+    <rci-skymap></rci-skymap>
+    <pano></pano>
+    <div id="status" ng-controller="StatusController">
+      <md-card>
+	<md-card-header>
+	  <md-card-header-text>
+	    <span class="md-title">Current Activity</span>
+	  </md-card-header-text>
+	</md-card-header>
+	<md-card-content>
+	  <div ng-if="!rci.status.AuthorizedClients.length">Idle</div>
+	  <span ng-repeat="client in rci.status.AuthorizedClients">{{client.Name}}<i ng-if="!client.Name">unknown</i><span ng-if="!$last">, </span></span>
+	</md-card-content>
+      </md-card>
+      <md-card>
+	<md-card-header>
+	  <md-card-header-text>
+	    <span class="md-title">Mechanical Status</span>
+	  </md-card-header-text>
+	</md-card-header>
+	<md-card-content>
+	  <table>
+	    <tr><th>Azimuth</th><td>
+		<knob ng-model="rci.status.AzPos" unit="°"></knob><br />
+		<knob ng-model="rci.status.AzVel" unit="°/s"></knob>
+	    </td></tr>
+	    <tr><th>Elevation</th><td>
+		<knob ng-model="rci.status.ElPos" unit="°"></knob><br />
+		<knob ng-model="rci.status.ElVel" unit="°/s"></knob>
+	    </td></tr>
+	    <tr ng-show="rci.status.CommandTrackingBody"><th>Tracking</th><td>
+		{{rci.status.Bodies[rci.status.CommandTrackingBody]}}
+	    </td></tr>
+	  </table>
+	</md-card-content>
+      </md-card>
+      <md-card>
+	<md-card-header>
+	  <md-card-header-text>
+	    <span class="md-title">RF Status</span>
+	  </md-card-header-text>
+	</md-card-header>
+	<md-card-content>
+	  <table>
+	    <tr><th colspan="2"><div ng-repeat="band in rci.status.Sequencer.Bands track by $index">
+		  <span ng-if="band.TX">Transmit on Band {{$index}}</span>
+		  <span ng-if="!band.TX && band.CommandTX">Switching to Transmit on Band {{$index}}</span>
+		  <span ng-if="band.CommandRX">Receive on Band {{$index}}</span>
+		</div>
+	    </th></tr>
+	  </table>
+	</md-card-content>
+      </md-card>
+      <md-card class="more-info">
+	<md-card-content>
+	  <a href="http://w1xm.mit.edu/">http://w1xm.mit.edu/</a>
+	</md-card-content>
 	</md-card>
-	<md-card>
-	  <md-card-header>
-	    <md-card-header-text>
-	      <span class="md-title">Mechanical Status</span>
-	    </md-card-header-text>
-	  </md-card-header>
-	  <md-card-content>
-	    <table>
-	      <tr><th>Azimuth</th><td>
-		  <knob ng-model="rci.status.AzPos" unit="°"></knob><br />
-		  <knob ng-model="rci.status.AzVel" unit="°/s"></knob>
-	      </td></tr>
-	      <tr><th>Elevation</th><td>
-		  <knob ng-model="rci.status.ElPos" unit="°"></knob><br />
-		  <knob ng-model="rci.status.ElVel" unit="°/s"></knob>
-	      </td></tr>
-	      <tr ng-show="rci.status.CommandTrackingBody"><th>Tracking</th><td>
-		  {{rci.status.Bodies[rci.status.CommandTrackingBody]}}
-	      </td></tr>
-	    </table>
-	  </md-card-content>
-	</md-card>
-	<md-card>
-	  <md-card-header>
-	    <md-card-header-text>
-	      <span class="md-title">RF Status</span>
-	    </md-card-header-text>
-	  </md-card-header>
-	  <md-card-content>
-	    <table>
-	      <tr><th colspan="2"><div ng-repeat="band in rci.status.Sequencer.Bands track by $index">
-		    <span ng-if="band.TX">Transmit on Band {{$index}}</span>
-		    <span ng-if="!band.TX && band.CommandTX">Switching to Transmit on Band {{$index}}</span>
-		    <span ng-if="band.CommandRX">Receive on Band {{$index}}</span>
-		  </div>
-	      </th></tr>
-	    </table>
-	  </md-card-content>
-	</md-card>
-	<md-card class="more-info">
-	  <md-card-content>
-	    <a href="http://w1xm.mit.edu/">http://w1xm.mit.edu/</a>
-	  </md-card-content>
-	</md-card>
-      </div>
     </div>
-    <div>
+    <footer>
       <md-card>
 	<md-card-content>
 	  <p>The Green Building roof has housed the experimental WR-66
@@ -93,6 +89,6 @@
 	    displays above show the current experimental status.</p>
 	</md-card-content>
       </md-card>
-    </div>
+    </footer>
   </body>
 </html>
