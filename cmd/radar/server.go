@@ -16,6 +16,8 @@ import (
 	"github.com/w1xm/rci_interface/sequencer"
 )
 
+const spindownDelay = 10 * time.Minute
+
 type AuthorizedClient struct {
 	RemoteAddr string
 	Name       string
@@ -195,9 +197,9 @@ func (s *Server) trackLoop(ctx context.Context) {
 		s.mu.Lock()
 		s.statusMu.RLock()
 		command := s.status.CommandTrackingBody
-		if command == 0 && time.Since(s.status.LastMoveTime) > 30*time.Minute && (s.status.Amplidynes.CommandAzEnabled || s.status.Amplidynes.CommandElEnabled) {
+		if command == 0 && time.Since(s.status.LastMoveTime) > spindownDelay && (s.status.Amplidynes.CommandAzEnabled || s.status.Amplidynes.CommandElEnabled) {
 			stopAmplidynes = true
-			// 30 minutes after last movement command, stop the amplidynes.
+			// N minutes after last movement command, stop the amplidynes.
 		}
 		s.statusMu.RUnlock()
 		if stopAmplidynes {
