@@ -20,7 +20,7 @@ func main() {
 	client := influxdb2.NewClient(server, os.Getenv("INFLUX_TOKEN"))
 	defer client.Close()
 	// Get non-blocking write client
-	writeApi := client.WriteApi("w1xm", "radar")
+	writeApi := client.WriteApi("w1xm", "radar.raw")
 	defer writeApi.Close()
 	// Get errors channel
 	errorsCh := writeApi.Errors()
