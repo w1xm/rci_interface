@@ -68,7 +68,10 @@ func regToFlags(reg uint16) string {
 	return "UNKNOWN"
 }
 
-const VELOCITY_QUIESCENT = 0.2
+const (
+	QUIESCENT_VELOCITY = 0.2
+	QUIESCENT_TIME     = 1 * time.Second
+)
 
 func (r *RCI) parseRegisters() Status {
 	registers := r.readRegisters
@@ -112,7 +115,11 @@ func (r *RCI) parseRegisters() Status {
 	status.HostOkay = flags&64 != 0
 	status.ShutdownError = uint8(flags >> 10)
 
-	status.Moving = len(r.blockedMoves) > 0 || ((status.CommandAzFlags != "NONE" || status.CommandElFlags != "NONE") && status.ShutdownError != 0) || math.Abs(status.AzVel) > VELOCITY_QUIESCENT || math.Abs(status.ElVel) > VELOCITY_QUIESCENT
+	moving := len(r.blockedMoves) > 0 || ((status.CommandAzFlags != "NONE" || status.CommandElFlags != "NONE") && status.ShutdownError != 0) || math.Abs(status.AzVel) > QUIESCENT_VELOCITY || math.Abs(status.ElVel) > QUIESCENT_VELOCITY
+	if moving {
+		r.lastMove = time.Now()
+	}
+	status.Moving = time.Since(r.lastMove) < QUIESCENT_TIME
 	status.MovingDisabled = r.blockedMoves != nil
 	return status
 }
@@ -126,6 +133,7 @@ type RCI struct {
 	readRegisters  [12]uint16
 	writeRegisters [11]uint16
 	lastDiag       uint16
+	lastMove       time.Time
 	// blockedMoves is non-nil when moves are being blocked
 	blockedMoves map[int]uint16
 }
@@ -208,8 +216,12 @@ func (r *RCI) Write(register int, values ...uint16) {
 	for i, v := range values {
 		if r.blockedMoves != nil {
 			if register+i == 3 || register+i == 6 {
-				r.blockedMoves[register+i] = v
-				v = SERVO_NONE
+				if v == SERVO_NONE {
+					delete(r.blockedMoves, register+i)
+				} else {
+					r.blockedMoves[register+i] = v
+					v = SERVO_NONE
+				}
 			}
 		}
 		r.writeRegisters[register+i] = v
