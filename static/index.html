@@ -75,6 +75,7 @@
 	      <div ng-if="rci.status.BadCommand">Bad Command</div>
 	      <div ng-if="rci.status.HostOkay">Host Okay</div>
 	      <div ng-if="rci.status.Moving">Moving</div>
+	      <div ng-if="!rci.status.Moving">Stationary</div>
 	      <div ng-if="rci.status.MovingDisabled">Moving Disabled</div>
 	      <div ng-if="rci.status.ShutdownError">Shutdown {{rci.status.ShutdownError|shutdown}}<button ng-click="rci.exitShutdown()">Exit Shutdown</button></div>
 	</td></tr>
