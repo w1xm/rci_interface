@@ -85,6 +85,8 @@ func NewServer(ctx context.Context, port string, passwords []string, latitude, l
 	if err != nil {
 		return nil, err
 	}
+	// "Elevation overvelocity" is always okay (ugh).
+	r.SetAcceptableShutdowns(map[uint8]bool{11: true})
 	s.r = r
 	if sequencerURL != "" {
 		s.seq, err = sequencer.ConnectRemote(ctx, sequencerURL, s.sequencerStatusCallback)
@@ -207,7 +209,7 @@ func (s *Server) trackLoop(ctx context.Context) {
 		}
 		if command > 0 && command <= len(s.bodies) {
 			body := s.bodies[command-1]
-			topo := body.Topo(novas.Now(), s.place, novas.REFR_NONE)
+			topo := body.Topo(novas.Now(), s.place, novas.REFR_PLACE)
 			s.r.SetAzimuthPosition(topo.Az)
 			s.r.SetElevationPosition(topo.Alt)
 		}

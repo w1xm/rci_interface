@@ -127,6 +127,9 @@ func (r *RCI) parseRegisters() Status {
 type StatusCallback func(status Status)
 
 type RCI struct {
+	// acceptableShutdowns is a bitmask of the shutdown conditions that can be ignored
+	acceptableShutdowns map[uint8]bool
+
 	s              *serial.Port
 	statusCallback StatusCallback
 	mu             sync.Mutex
@@ -142,6 +145,9 @@ func Connect(ctx context.Context, port string, statusCallback StatusCallback) (*
 	r := &RCI{statusCallback: statusCallback}
 	go r.reconnectLoop(ctx, port)
 	return r, nil
+}
+func (r *RCI) SetAcceptableShutdowns(value map[uint8]bool) {
+	r.acceptableShutdowns = value
 }
 
 func (r *RCI) reconnectLoop(ctx context.Context, port string) {
@@ -172,6 +178,7 @@ func (r *RCI) reconnectLoop(ctx context.Context, port string) {
 func (r *RCI) watch(ctx context.Context) {
 	// TODO: Close when ctx is canceled.
 	defer r.s.Close()
+	exitingShutdown := false
 	scanner := bufio.NewScanner(r.s)
 	for scanner.Scan() {
 		input := scanner.Text()
@@ -192,6 +199,15 @@ func (r *RCI) watch(ctx context.Context) {
 			}
 			r.notifyStatus()
 			r.mu.Unlock()
+			if status := r.parseRegisters(); status.ShutdownError != 0 && r.acceptableShutdowns[status.ShutdownError] {
+				if !exitingShutdown {
+					exitingShutdown = true
+					log.Printf("Acceptable shutdown %d; automatically exiting shutdown", status.ShutdownError)
+					r.exitShutdown()
+				}
+			} else {
+				exitingShutdown = false
+			}
 		default:
 			log.Printf("unknown input: %s", input)
 		}
@@ -306,12 +322,17 @@ func (r *RCI) SetElevationVelocity(angle float64) {
 
 func (r *RCI) ExitShutdown() {
 	r.Stop()
+	r.exitShutdown()
+}
+func (r *RCI) exitShutdown() {
 	// Toggling this bit from 0 to 1 to 0 in a time not less than
 	// 0.1 seconds, but not greater than 1.0 second, will force
 	// the RCI to exit from any prior shutdown condition. The
 	// toggling feature prevents the bit from accidentally being
 	// left active, since doing so would prevent genuine shutdowns
 	// from proceeding normally.
+	r.Write(10, 0)
+	time.Sleep(200 * time.Millisecond)
 	r.Write(10, 1)
 	time.Sleep(200 * time.Millisecond)
 	r.Write(10, 0)
