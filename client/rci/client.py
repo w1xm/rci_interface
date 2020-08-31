@@ -4,6 +4,7 @@ __metaclass__ = type
 
 import errno
 import json
+import logging
 import time
 import websocket
 import os
@@ -16,6 +17,8 @@ except ImportError:
 from threading import Thread, Lock, Condition
 
 class Client(object):
+    logger = logging.getLogger('rci.client')
+
     def __init__(self, url=None, password=None, client_name=None):
         if not url:
             url = os.getenv("RCI_ADDRESS", "ws://localhost:8502/api/ws")
@@ -29,20 +32,33 @@ class Client(object):
             client_name = os.path.basename(sys.argv[0])
         url += 'client='+quote(client_name)
         self._url = url
+        self._password = password
         self._ws = websocket.WebSocket(enable_multithread=True)
-        self._ws.connect(self._url, subprotocols=[password] if password else None)
         self._lock = Lock()
         self._cv = Condition(self._lock)
         self._status = {}
         t = Thread(target=self._recv_loop)
         t.daemon = True
         t.start()
+        # Wait for connection to be established
+        with self._lock:
+            self._cv.wait()
 
     def _recv_loop(self):
-        for message in self._ws:
-            with self._cv:
-                self._status = json.loads(message)
-                self._cv.notifyAll()
+        while True:
+            try:
+                self._ws.connect(self._url, subprotocols=[self._password] if self._password else None)
+            except:
+                self.logger.exception('Failed to connect to %s', self._url)
+                time.sleep(.1)
+            try:
+                for message in self._ws:
+                    with self._cv:
+                        self._status = json.loads(message)
+                        self._cv.notifyAll()
+            except websocket.WebSocketConnectionClosedException:
+                self.logger.warning('Lost connection to %s', self._url)
+                pass
 
     def _send(self, message):
         self._ws.send(json.dumps(message))
