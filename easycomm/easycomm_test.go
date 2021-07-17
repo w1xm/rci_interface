@@ -30,8 +30,14 @@ func TestParsing(t *testing.T) {
 	}{
 		{"AZ170.00", Status{AzPos: 170}},
 		{"EL45", Status{ElPos: 45}},
-		{`\?VEL1.5,.5`, Status{AzVel: 1.5, ElVel: .5}},
+		{`IP7,1.5,.5`, Status{AzVel: 1.5, ElVel: .5}},
 		{`GS262`, Status{StatusRegister: 262, Moving: true, CommandAzFlags: "POSITION", CommandElFlags: "NONE"}},
+		{`GE6`, Status{ErrorRegister: 6, ErrorFlags: struct{ NoError, SensorError, HomingError, MotorError bool }{SensorError: true, HomingError: true}}},
+		{`IP0,35.6`, Status{Temperature: 35.6}},
+		{`IP1,2,1`, Status{AzimuthCW: true, ElevationLower: true}},
+		{`IP5,10,15 IP5,11 IP5,12`, Status{RawAzDrive: 12, RawElDrive: 15}},
+		{`IP7,1.5,0.5`, Status{AzVel: 1.5, ElVel: 0.5}},
+		{`CR10,150,10.5`, Status{CommandAzPos: 150, CommandElPos: 10.5}},
 	} {
 		t.Run(test.input, func(t *testing.T) {
 			ctx := context.Background()

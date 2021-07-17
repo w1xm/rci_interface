@@ -31,6 +31,7 @@ type Rotator struct {
 }
 
 // Protocol docs at https://github.com/Hamlib/Hamlib/blob/master/rotators/easycomm/easycomm.txt
+// Compatible with https://gitlab.com/Quartapound/satnogs-rotator-firmware/-/blob/master/libraries/easycomm.h
 
 type Status struct {
 	// \?ENC command returns:
@@ -38,47 +39,63 @@ type Status struct {
 	RawElPos int32
 	RawAzVel int32
 	RawElVel int32
+
 	// AZ command returns:
 	AzPos float64
 	// EL command returns:
 	ElPos float64
 
-	// \?VEL command returns:
+	// IP0 returns temperature
+	Temperature float64
+
+	// IP1 returns Az endstop
+	AzimuthCCW, AzimuthCW bool
+	// IP2 returns El endstop
+	ElevationLower, ElevationUpper bool
+
+	// IP3 returns Az position (redundant)
+	// IP4 returns El position (redundant)
+
+	// IP5 returns Az drive load
+	RawAzDrive float64
+	// IP6 returns El drive load
+	RawElDrive float64
+	// IP7 returns Az speed
 	AzVel float64
+	// IP8 returns El speed
 	ElVel float64
 
-	// \?DRV command returns:
-	RawAzDrive int16
-	RawElDrive int16
+	// CR1-3 are azimuth P-I-D
+	// CR4-6 are elevation P-I-D
+	// CR7 is azimuth park position
+	// CR8 is elevation park position
+	// CR10-13 return Az position setpoint, El position setpoint, Az velocity setpoint, El velocity setpoint (not supported by SatNOGS)
+	CommandAzPos, CommandElPos float64
+	CommandAzVel, CommandElVel float64
 
 	// GS command returns:
 	StatusRegister uint64
 	// GE command returns
 	ErrorRegister uint64
+	ErrorFlags    struct {
+		NoError     bool
+		SensorError bool
+		HomingError bool
+		MotorError  bool
+	}
 
 	// VE command returns:
 	Version string
-
-	// IP command returns:
-	Status [8]bool
-	// These are the flags broken down
-	ElevationLower        bool
-	ElevationUpper        bool
-	AzimuthCW, AzimuthCCW bool
 
 	HostOkay bool
 
 	Moving bool
 
-	// \?TGT comand returns:
-	CommandAzPos, CommandElPos float64
-	CommandAzVel, CommandElVel float64
-
 	CommandAzFlags, CommandElFlags string
 }
 
 func ConnectTCP(ctx context.Context, port string, statusCallback StatusCallback) (*Rotator, error) {
-	r := &Rotator{}
+	r := &Rotator{statusCallback: statusCallback}
 	go r.reconnectLoop(ctx, port)
 	return r, nil
 }
@@ -152,7 +169,7 @@ func (r *Rotator) watch(ctx context.Context) error {
 		if err := scanner.Err(); err != nil {
 			return fmt.Errorf("reading port: %w", err)
 		}
-		return nil
+		return io.EOF
 	})
 	g.Go(func() error {
 		for {
@@ -179,40 +196,6 @@ func (r *Rotator) watch(ctx context.Context) error {
 		}
 	})
 	return g.Wait()
-	// exitingShutdown := false
-	// scanner := bufio.NewScanner(r.conn)
-	// for scanner.Scan() {
-	// 	input := scanner.Text()
-	// 	if len(input) < 1 {
-	// 		continue
-	// 	}
-	// 	switch {
-	// 	case input[0] == '!':
-	// 		log.Printf(input)
-	// 	case input[0] == 'r':
-	// 		r.mu.Lock()
-	// 		for i, word := range strings.Split(input[1:len(input)-1], " ") {
-	// 			v, err := strconv.ParseUint(word, 16, 16)
-	// 			if err != nil {
-	// 				log.Printf("failed to parse %q: %v", input, err)
-	// 			}
-	// 			r.readRegisters[i] = uint16(v)
-	// 		}
-	// 		r.notifyStatus()
-	// 		r.mu.Unlock()
-	// 		if status := r.parseRegisters(); status.ShutdownError != 0 && r.acceptableShutdowns[status.ShutdownError] {
-	// 			if !exitingShutdown {
-	// 				exitingShutdown = true
-	// 				log.Printf("Acceptable shutdown %d; automatically exiting shutdown", status.ShutdownError)
-	// 				r.exitShutdown()
-	// 			}
-	// 		} else {
-	// 			exitingShutdown = false
-	// 		}
-	// 	default:
-	// 		log.Printf("unknown input: %s", input)
-	// 	}
-	// }
 }
 
 func regToFlags(reg uint64) string {
@@ -254,15 +237,27 @@ func (r *Rotator) parseInput(input string) error {
 		}
 		r.status.StatusRegister = uint64(i)
 		for i, dir := range []*string{&r.status.CommandAzFlags, &r.status.CommandElFlags} {
-			*dir = regToFlags(r.status.StatusRegister >> (i * 8) & 0xFF)
+			val := r.status.StatusRegister >> (i * 8) & 0xFF
+			if val == 0 {
+				val = r.status.StatusRegister & 0xFF
+			}
+			*dir = regToFlags(val)
 		}
-		r.status.Moving = (r.status.StatusRegister & 0x22) != 0
+		r.status.Moving = (r.status.StatusRegister & 0x202) != 0
 	case input[:2] == "GE": // GExxx
 		i, err := strconv.ParseInt(input[2:], 10, 64)
 		if err != nil {
 			return err
 		}
 		r.status.ErrorRegister = uint64(i)
+		for i, v := range []*bool{
+			&r.status.ErrorFlags.NoError,
+			&r.status.ErrorFlags.SensorError,
+			&r.status.ErrorFlags.HomingError,
+			&r.status.ErrorFlags.MotorError,
+		} {
+			*v = r.status.ErrorRegister&(1<<i) == (1 << i)
+		}
 	case input[:2] == "VE": // VEaaaaaa
 		r.status.Version = input[2:]
 	case input[:2] == "IP": // IPn,n
@@ -272,13 +267,51 @@ func (r *Rotator) parseInput(input string) error {
 			log.Printf("%q: %v", input, err)
 			return nil
 		}
-		for j := 0; i+j < len(r.status.Status) && j < len(parts); j++ {
-			r.status.Status[i+j] = (parts[j] == "1")
+		parts = parts[1:]
+		for j := 0; j < len(parts); j++ {
+			valueFloat, _ := strconv.ParseFloat(parts[j], 64)
+			valueInt, _ := strconv.Atoi(parts[j])
+			switch i + j {
+			case 0:
+				r.status.Temperature = valueFloat
+			case 1:
+				r.status.AzimuthCCW = valueInt&1 == 1
+				r.status.AzimuthCW = valueInt&2 == 2
+			case 2:
+				r.status.ElevationLower = valueInt&1 == 1
+				r.status.ElevationUpper = valueInt&2 == 2
+			case 5:
+				r.status.RawAzDrive = valueFloat
+			case 6:
+				r.status.RawElDrive = valueFloat
+			case 7:
+				r.status.AzVel = valueFloat
+			case 8:
+				r.status.ElVel = valueFloat
+			}
 		}
-		r.status.ElevationLower = r.status.Status[0]
-		r.status.ElevationUpper = r.status.Status[1]
-		r.status.AzimuthCW = r.status.Status[2]
-		r.status.AzimuthCCW = r.status.Status[3]
+	case input[:2] == "CR": // CRn,nparts := strings.Split(input[2:], ",")
+		parts := strings.Split(input[2:], ",")
+		i, err := strconv.Atoi(parts[0])
+		if err != nil {
+			log.Printf("%q: %v", input, err)
+			return nil
+		}
+		parts = parts[1:]
+		for j := 0; j < len(parts); j++ {
+			valueFloat, _ := strconv.ParseFloat(parts[j], 64)
+			//valueInt, _ := strconv.Atoi(parts[j])
+			switch i + j {
+			case 10:
+				r.status.CommandAzPos = valueFloat
+			case 11:
+				r.status.CommandElPos = valueFloat
+			case 12:
+				r.status.CommandAzVel = valueFloat
+			case 13:
+				r.status.CommandElVel = valueFloat
+			}
+		}
 	case len(input) < 5:
 		return errors.New("unknown rotator output")
 	case input[:5] == `\?ENC`:
@@ -299,25 +332,6 @@ func (r *Rotator) parseInput(input string) error {
 			&r.status.AzVel,
 			&r.status.ElVel,
 		}, input[5:])
-	case input[:5] == `\?TGT`:
-		return parseFloatArray([]*float64{
-			&r.status.CommandAzPos,
-			&r.status.CommandElPos,
-			&r.status.CommandAzVel,
-			&r.status.CommandElVel,
-		}, input[5:])
-	case input[:5] == `\?DRV`:
-		parts := strings.Split(input[5:], ",")
-		for i, field := range []*int16{
-			&r.status.RawAzDrive,
-			&r.status.RawElDrive,
-		} {
-			i, err := strconv.Atoi(parts[i])
-			if err != nil {
-				return err
-			}
-			*field = int16(i)
-		}
 	default:
 		return errors.New("unknown rotator output")
 	}
