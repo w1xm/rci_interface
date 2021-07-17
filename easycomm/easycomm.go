@@ -41,12 +41,12 @@ type Status struct {
 	RawElVel int32
 
 	// AZ command returns:
-	AzPos float64
+	AzPos float64 `report:"AZ"`
 	// EL command returns:
-	ElPos float64
+	ElPos float64 `report:"EL"`
 
 	// IP0 returns temperature
-	Temperature float64
+	Temperature float64 `report:"IP0,"`
 
 	// IP1 returns Az endstop
 	AzimuthCCW, AzimuthCW bool
@@ -61,22 +61,24 @@ type Status struct {
 	// IP6 returns El drive load
 	RawElDrive float64
 	// IP7 returns Az speed
-	AzVel float64
+	AzVel float64 `report:"IP7,"`
 	// IP8 returns El speed
-	ElVel float64
+	ElVel float64 `report:"IP8,"`
 
 	// CR1-3 are azimuth P-I-D
 	// CR4-6 are elevation P-I-D
 	// CR7 is azimuth park position
 	// CR8 is elevation park position
 	// CR10-13 return Az position setpoint, El position setpoint, Az velocity setpoint, El velocity setpoint (not supported by SatNOGS)
-	CommandAzPos, CommandElPos float64
-	CommandAzVel, CommandElVel float64
+	CommandAzPos float64 `report:"CR10,"`
+	CommandElPos float64 `report:"CR11,"`
+	CommandAzVel float64 `report:"CR12,"`
+	CommandElVel float64 `report:"CR13,"`
 
 	// GS command returns:
-	StatusRegister uint64
+	StatusRegister uint64 `report:"GS"`
 	// GE command returns
-	ErrorRegister uint64
+	ErrorRegister uint64 `report:"GE"`
 	ErrorFlags    struct {
 		NoError     bool
 		SensorError bool
@@ -85,7 +87,7 @@ type Status struct {
 	}
 
 	// VE command returns:
-	Version string
+	Version string `report:"VE"`
 
 	HostOkay bool
 
@@ -366,19 +368,19 @@ func (r *Rotator) SetElevationPosition(angle float64) {
 }
 
 func (r *Rotator) SetAzimuthVelocity(angle float64) {
-	dir := "U"
+	dir := "R"
 	if angle < 0 {
 		angle = -angle
-		dir = "D"
+		dir = "L"
 	}
 	r.send(fmt.Sprintf("V%s%03.0f", dir, angle*1000))
 }
 
 func (r *Rotator) SetElevationVelocity(angle float64) {
-	dir := "R"
+	dir := "U"
 	if angle < 0 {
 		angle = -angle
-		dir = "L"
+		dir = "D"
 	}
 	r.send(fmt.Sprintf("V%s%03.0f", dir, angle*1000))
 }
