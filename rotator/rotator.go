@@ -12,6 +12,15 @@ type Rotator interface {
 	// ExitShutdown()
 }
 
+type StatusCallback func(status Status)
+
+type Status interface {
+	AzimuthPosition() float64
+	ElevationPosition() float64
+
+	Clone() Status
+}
+
 type Shutdowner interface {
 	ExitShutdown()
 	SetAcceptableShutdowns(map[uint8]bool)

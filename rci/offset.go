@@ -3,6 +3,8 @@ package rci
 import (
 	"context"
 	"sync"
+
+	"github.com/w1xm/rci_interface/rotator"
 )
 
 type Offset struct {
@@ -27,10 +29,11 @@ func add(angle, offset float64) float64 {
 	return angle
 }
 
-func ConnectOffset(ctx context.Context, port string, statusCallback StatusCallback, offsetAz, offsetEl float64) (*Offset, error) {
+func ConnectOffset(ctx context.Context, port string, statusCallback rotator.StatusCallback, offsetAz, offsetEl float64) (*Offset, error) {
 	o := &Offset{}
-	cb := func(status Status) {
+	cb := func(s rotator.Status) {
 		o.mu.Lock()
+		status := s.(Status)
 		status.AzPos = add(status.AzPos, o.offsetAz)
 		status.ElPos = add(status.ElPos, o.offsetEl)
 		status.CommandAzPos = add(status.CommandAzPos, o.offsetAz)

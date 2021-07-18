@@ -26,7 +26,7 @@ type AuthorizedClient struct {
 
 type Status struct {
 	SequenceNumber int
-	rci.Status
+	rotator.Status
 	LastMoveTime        time.Time
 	Sequencer           sequencer.Status
 	Amplidynes          cps20.Status
@@ -40,6 +40,9 @@ type Status struct {
 }
 
 func (s Status) Clone() Status {
+	if s.Status != nil {
+		s.Status = s.Status.Clone()
+	}
 	s.Bodies = append([]string{}, s.Bodies...)
 	s.AuthorizedClients = append([]AuthorizedClient{}, s.AuthorizedClients...)
 	return s
@@ -483,7 +486,7 @@ func (t *ThrottledTimer) Wait(seq int) <-chan time.Time {
 	return c
 }
 
-func (s *Server) statusCallback(status rci.Status) {
+func (s *Server) statusCallback(status rotator.Status) {
 	s.statusMu.Lock()
 	defer s.statusMu.Unlock()
 	s.status.Status = status

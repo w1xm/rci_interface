@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/tarm/serial"
+	"github.com/w1xm/rci_interface/rotator"
 )
 
 type Status struct {
@@ -50,6 +51,18 @@ type Status struct {
 	CommandAzVel, CommandElVel     float64
 	CommandAzFlags, CommandElFlags string
 	CommandStatus                  [48]bool
+}
+
+func (s Status) Clone() rotator.Status {
+	return s
+}
+
+func (s Status) AzimuthPosition() float64 {
+	return s.AzPos
+}
+
+func (s Status) ElevationPosition() float64 {
+	return s.ElPos
 }
 
 func regToSigned(reg uint16) float64 {
@@ -124,14 +137,12 @@ func (r *RCI) parseRegisters() Status {
 	return status
 }
 
-type StatusCallback func(status Status)
-
 type RCI struct {
 	// acceptableShutdowns is a bitmask of the shutdown conditions that can be ignored
 	acceptableShutdowns map[uint8]bool
 
 	s              *serial.Port
-	statusCallback StatusCallback
+	statusCallback rotator.StatusCallback
 	mu             sync.Mutex
 	readRegisters  [12]uint16
 	writeRegisters [11]uint16
@@ -141,7 +152,7 @@ type RCI struct {
 	blockedMoves map[int]uint16
 }
 
-func Connect(ctx context.Context, port string, statusCallback StatusCallback) (*RCI, error) {
+func Connect(ctx context.Context, port string, statusCallback rotator.StatusCallback) (*RCI, error) {
 	r := &RCI{statusCallback: statusCallback}
 	go r.reconnectLoop(ctx, port)
 	return r, nil

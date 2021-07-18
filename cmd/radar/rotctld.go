@@ -151,13 +151,14 @@ Can get Info: N
 			s.statusMu.RLock()
 			status := s.status
 			s.statusMu.RUnlock()
-			if status.AzPos > 180 {
-				status.AzPos -= 360
+			az := status.AzimuthPosition()
+			if az > 180 {
+				az -= 360
 			}
 			if extended {
-				fmt.Fprintf(conn, "Azimuth: %.6f\nElevation: %.6f\n", status.AzPos, status.ElPos)
+				fmt.Fprintf(conn, "Azimuth: %.6f\nElevation: %.6f\n", az, status.ElevationPosition())
 			} else {
-				fmt.Fprintf(conn, "%.6f\n%.6f\n", status.AzPos, status.ElPos)
+				fmt.Fprintf(conn, "%.6f\n%.6f\n", az, status.ElevationPosition())
 			}
 			rprt = 0
 		}
