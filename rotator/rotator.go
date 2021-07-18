@@ -11,3 +11,21 @@ type Rotator interface {
 	// SetMovingDisabled(blocked bool)
 	// ExitShutdown()
 }
+
+type Shutdowner interface {
+	ExitShutdown()
+	SetAcceptableShutdowns(map[uint8]bool)
+}
+
+type Offsetter interface {
+	SetAzimuthOffset(offset float64)
+	SetElevationOffset(offset float64)
+}
+
+type SetMovingDisableder interface {
+	SetMovingDisabled(bool)
+}
+
+type Writer interface {
+	Write(register int, values ...uint16)
+}

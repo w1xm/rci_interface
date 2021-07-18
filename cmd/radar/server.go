@@ -13,6 +13,7 @@ import (
 	"github.com/pebbe/novas"
 	"github.com/w1xm/rci_interface/cps20"
 	"github.com/w1xm/rci_interface/rci"
+	"github.com/w1xm/rci_interface/rotator"
 	"github.com/w1xm/rci_interface/sequencer"
 )
 
@@ -61,7 +62,7 @@ type Server struct {
 	passwords []string
 	place     *novas.Place
 	mu        sync.Mutex
-	r         *rci.Offset
+	r         rotator.Rotator
 	bodies    []*novas.Body
 	seq       *sequencer.Sequencer
 	cps20     *cps20.CPS20
@@ -81,12 +82,15 @@ func NewServer(ctx context.Context, port string, passwords []string, latitude, l
 		passwords: passwords,
 	}
 	s.statusCond = sync.NewCond(s.statusMu.RLocker())
+	var r rotator.Rotator
 	r, err := rci.ConnectOffset(ctx, port, s.statusCallback, azOffset, elOffset)
 	if err != nil {
 		return nil, err
 	}
-	// "Elevation overvelocity" is always okay (ugh).
-	r.SetAcceptableShutdowns(map[uint8]bool{11: true})
+	if r, ok := r.(rotator.Shutdowner); ok {
+		// "Elevation overvelocity" is always okay (ugh).
+		r.SetAcceptableShutdowns(map[uint8]bool{11: true})
+	}
 	s.r = r
 	if sequencerURL != "" {
 		s.seq, err = sequencer.ConnectRemote(ctx, sequencerURL, s.sequencerStatusCallback)
@@ -316,7 +320,9 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 			case "track":
 				s.track(msg.Body)
 			case "write":
-				s.r.Write(msg.Register, msg.Value)
+				if r, ok := s.r.(rotator.Writer); ok {
+					r.Write(msg.Register, msg.Value)
+				}
 			case "set_azimuth_position":
 				s.track(0)
 				s.r.SetAzimuthPosition(msg.Position)
@@ -337,17 +343,23 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 				s.r.SetAzimuthVelocity(0)
 				s.r.SetElevationVelocity(0)
 			case "exit_shutdown":
-				s.r.ExitShutdown()
+				if r, ok := s.r.(rotator.Shutdowner); ok {
+					r.ExitShutdown()
+				}
 			case "set_azimuth_offset":
 				s.statusMu.Lock()
 				s.status.OffsetAz = msg.Position
 				s.statusMu.Unlock()
-				s.r.SetAzimuthOffset(s.status.OffsetAz)
+				if r, ok := s.r.(rotator.Offsetter); ok {
+					r.SetAzimuthOffset(s.status.OffsetAz)
+				}
 			case "set_elevation_offset":
 				s.statusMu.Lock()
 				s.status.OffsetEl = msg.Position
 				s.statusMu.Unlock()
-				s.r.SetElevationOffset(s.status.OffsetEl)
+				if r, ok := s.r.(rotator.Offsetter); ok {
+					r.SetElevationOffset(s.status.OffsetEl)
+				}
 			case "add_star":
 				s.statusMu.Lock()
 				s.bodies = append(s.bodies, novas.NewStar(
@@ -487,8 +499,9 @@ func (s *Server) sequencerStatusCallback(status sequencer.Status) {
 
 func (s *Server) cps20StatusCallback(status cps20.Status) {
 	// If amplidynes are not running, immediately stop the RCI.
-	s.r.SetMovingDisabled(!status.AmplidynesActive)
-
+	if r, ok := s.r.(rotator.SetMovingDisableder); ok {
+		r.SetMovingDisabled(!status.AmplidynesActive)
+	}
 	s.statusMu.Lock()
 	defer s.statusMu.Unlock()
 	s.status.Amplidynes = status
@@ -505,7 +518,9 @@ func (s *Server) setAmplidynesEnabled(enabled bool) {
 	} else {
 		// Immediately stop RCI before we spin down the amplidynes
 		// TODO: Should there be an extra delay here?
-		s.r.SetMovingDisabled(true)
+		if r, ok := s.r.(rotator.SetMovingDisableder); ok {
+			r.SetMovingDisabled(true)
+		}
 		s.cps20.SetAmplidynesEnabled(false)
 	}
 }
