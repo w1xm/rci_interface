@@ -1,4 +1,4 @@
-package easycomm
+package simulator
 
 import (
 	"bufio"
@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/w1xm/rci_interface/easycomm/internal/status"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -22,13 +23,13 @@ import (
 type Simulator struct {
 	conn   io.ReadWriteCloser
 	mu     sync.Mutex
-	status Status
-	last   Status
+	status status.Status
+	last   status.Status
 }
 
-func NewSimulator() (*Simulator, net.Conn) {
+func New() (*Simulator, net.Conn) {
 	a, b := net.Pipe()
-	return &Simulator{conn: a, status: Status{Version: "sim"}}, b
+	return &Simulator{conn: a, status: status.Status{Version: "sim"}}, b
 }
 
 var cmdRE = regexp.MustCompile(`^([\?A-Z]+)(.*)$`)
@@ -46,17 +47,17 @@ func (s *Simulator) parseInput(input string) error {
 	case "AZ":
 		if len(parts) > 0 {
 			s.status.CommandAzFlags = "POSITION"
-			return parseFloat(&s.status.CommandAzPos, parts[0])
+			return status.ParseFloat(&s.status.CommandAzPos, parts[0])
 		}
 	case "EL":
 		if len(parts) > 0 {
 			s.status.CommandElFlags = "POSITION"
-			return parseFloat(&s.status.CommandElPos, parts[0])
+			return status.ParseFloat(&s.status.CommandElPos, parts[0])
 		}
 	case "VU", "VD":
 		if len(parts) > 0 {
 			s.status.CommandElFlags = "VELOCITY"
-			parseFloat(&s.status.CommandElVel, parts[0])
+			status.ParseFloat(&s.status.CommandElVel, parts[0])
 			if cmd[1] == 'D' {
 				s.status.CommandElVel = -s.status.CommandElVel
 			}
@@ -71,7 +72,7 @@ func (s *Simulator) parseInput(input string) error {
 	case "VL", "VR":
 		if len(parts) > 0 {
 			s.status.CommandAzFlags = "VELOCITY"
-			parseFloat(&s.status.CommandAzVel, parts[0])
+			status.ParseFloat(&s.status.CommandAzVel, parts[0])
 			if cmd[1] == 'L' {
 				s.status.CommandAzVel = -s.status.CommandAzVel
 			}
@@ -232,7 +233,7 @@ func (s *Simulator) step() (err error) {
 	return nil
 }
 
-func (s *Simulator) sendStatus(old *Status, cmd string) error {
+func (s *Simulator) sendStatus(old *status.Status, cmd string) error {
 	var oldv reflect.Value
 	if old != nil {
 		oldv = reflect.ValueOf(*old)

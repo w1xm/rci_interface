@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/w1xm/rci_interface/easycomm/simulator"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -64,7 +65,7 @@ func TestParsing(t *testing.T) {
 }
 
 func TestSimulator(t *testing.T) {
-	sim, conn := NewSimulator()
+	sim, conn := simulator.New()
 	ctx, cancel := context.WithCancel(context.Background())
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error {
