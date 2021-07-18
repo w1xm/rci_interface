@@ -168,9 +168,10 @@ func (r *Rotator) watch(ctx context.Context) error {
 				continue
 			}
 		}
-		if err := scanner.Err(); err != nil {
+		if err := scanner.Err(); err != nil && err != io.ErrClosedPipe {
 			return fmt.Errorf("reading port: %w", err)
 		}
+		// Return EOF so errgroup cancels the context.
 		return io.EOF
 	})
 	g.Go(func() error {
@@ -179,15 +180,16 @@ func (r *Rotator) watch(ctx context.Context) error {
 				`\?ENC`,
 				`AZ`,
 				`EL`,
-				`\?VEL`,
 				`GS`,
 				`GE`,
 				`VE`,
 				`IP`,
-				`\?TGT`,
 			} {
 				if _, err := r.conn.Write([]byte(cmd + "\n")); err != nil {
-					return err
+					if err == io.EOF || err == io.ErrClosedPipe {
+						return nil
+					}
+					return fmt.Errorf("writing %q: %v", cmd, err)
 				}
 			}
 			select {

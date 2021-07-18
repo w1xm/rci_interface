@@ -6,8 +6,10 @@ import (
 	"io"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"golang.org/x/sync/errgroup"
 )
 
 type NoopCloser struct {
@@ -59,4 +61,28 @@ func TestParsing(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSimulator(t *testing.T) {
+	sim, conn := NewSimulator()
+	ctx, cancel := context.WithCancel(context.Background())
+	g, ctx := errgroup.WithContext(ctx)
+	g.Go(func() error {
+		return sim.Run(ctx)
+	})
+	rot := &Rotator{statusCallback: func(s Status) {}, conn: conn}
+	g.Go(func() error {
+		if err := rot.watch(ctx); err != io.EOF {
+			t.Errorf("Rotator.watch got %v, want EOF", err)
+			return err
+		}
+		return nil
+	})
+	rot.SetAzimuthPosition(150)
+	time.Sleep(2 * time.Second)
+	cancel()
+	if err := g.Wait(); err != nil {
+		t.Errorf("Wait returned %v", err)
+	}
+	t.Logf("final status: %+v", rot.status)
 }

@@ -1,22 +1,34 @@
 package easycomm
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"math"
+	"net"
 	"reflect"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 )
 
 // Loosely inspired by https://github.com/rolandturner/ground-simulator/blob/master/Simulator.js
 
 type Simulator struct {
+	conn   io.ReadWriteCloser
 	mu     sync.Mutex
 	status Status
+	last   Status
+}
+
+func NewSimulator() (*Simulator, net.Conn) {
+	a, b := net.Pipe()
+	return &Simulator{conn: a, status: Status{Version: "sim"}}, b
 }
 
 var cmdRE = regexp.MustCompile(`^([\?A-Z]+)(.*)$`)
@@ -26,25 +38,24 @@ func (s *Simulator) parseInput(input string) error {
 	if parts == nil {
 		return fmt.Errorf("unrecognized command %q", input)
 	}
-	cmd, parts := parts[0], strings.Split(parts[1], ",")
+	cmd, parts := parts[1], strings.Split(parts[2], ",")
 	if len(parts) == 1 && parts[0] == "" {
 		parts = nil
 	}
 	switch cmd {
 	case "AZ":
 		if len(parts) > 0 {
-			parseFloat(&s.status.CommandAzPos, parts[0])
-		} else {
-			s.send("AZ%3.2f", s.status.AzPos)
+			s.status.CommandAzFlags = "POSITION"
+			return parseFloat(&s.status.CommandAzPos, parts[0])
 		}
 	case "EL":
 		if len(parts) > 0 {
-			parseFloat(&s.status.CommandElPos, parts[0])
-		} else {
-			s.send("EL%3.2f", s.status.ElPos)
+			s.status.CommandElFlags = "POSITION"
+			return parseFloat(&s.status.CommandElPos, parts[0])
 		}
 	case "VU", "VD":
 		if len(parts) > 0 {
+			s.status.CommandElFlags = "VELOCITY"
 			parseFloat(&s.status.CommandElVel, parts[0])
 			if cmd[1] == 'D' {
 				s.status.CommandElVel = -s.status.CommandElVel
@@ -56,8 +67,10 @@ func (s *Simulator) parseInput(input string) error {
 			}
 			s.send("V%s%3.2f", dir, math.Abs(s.status.CommandElVel))
 		}
+		return nil
 	case "VL", "VR":
 		if len(parts) > 0 {
+			s.status.CommandAzFlags = "VELOCITY"
 			parseFloat(&s.status.CommandAzVel, parts[0])
 			if cmd[1] == 'L' {
 				s.status.CommandAzVel = -s.status.CommandAzVel
@@ -69,8 +82,12 @@ func (s *Simulator) parseInput(input string) error {
 			}
 			s.send("V%s%3.2f", dir, math.Abs(s.status.CommandAzVel))
 		}
+		return nil
 	}
-	return nil
+	if len(parts) == 0 {
+		return s.sendStatus(nil, cmd)
+	}
+	return fmt.Errorf("unknown command %q %+v", cmd, parts)
 }
 
 const (
@@ -81,21 +98,43 @@ const (
 	// Acceleration due to drag when not driving
 	dragAccel = 30
 	// Discrete simulation step size
-	stepSize = 100 * time.Millisecond
+	stepSize = 25 * time.Millisecond
 )
 
 func (s *Simulator) Run(ctx context.Context) error {
+	defer s.conn.Close()
 	t := time.NewTicker(stepSize)
 	defer t.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-t.C:
+	g, ctx := errgroup.WithContext(ctx)
+	g.Go(func() error {
+		for {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-t.C:
+			}
+			if err := s.step(); err != nil {
+				return err
+			}
 		}
-		if err := s.step(); err != nil {
-			return err
+	})
+	g.Go(s.reader)
+	return g.Wait()
+}
+
+func (s *Simulator) reader() error {
+	scanner := bufio.NewScanner(s.conn)
+	scanner.Split(bufio.ScanWords)
+	for scanner.Scan() {
+		input := scanner.Text()
+		log.Printf("srv->sim: %s", input)
+		if err := s.parseInput(input); err != nil {
+			log.Printf("parsing %q: %v", input, err)
+			continue
 		}
+	}
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("reading port: %w", err)
 	}
 	return nil
 }
@@ -115,14 +154,13 @@ func posServo(s, t float64) float64 {
 
 func velServo(s, t float64) float64 {
 	delta := math.Abs(t - s)
-	if delta > maxAccel {
-		delta = maxAccel
+	if delta > maxAccel*stepSize.Seconds() {
+		delta = maxAccel * stepSize.Seconds()
 	}
-	delta *= stepSize.Seconds()
 	if t < s {
 		delta = -delta
 	}
-	new := t + delta
+	new := s + delta
 	if new > maxVel {
 		return maxVel
 	} else if new < -maxVel {
@@ -143,11 +181,18 @@ func drag(s float64) float64 {
 	return a
 }
 
-func (s *Simulator) step() error {
+func (s *Simulator) step() (err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	old := s.status
-	defer s.sendStatus(&old)
+	defer func() {
+		if serr := s.sendStatus(&s.last, ""); serr != nil {
+			log.Printf("sending status: %v", err)
+			if err == nil {
+				err = serr
+			}
+		}
+		s.last = s.status
+	}()
 	// Update position
 	cmdVel := s.status.CommandAzVel
 	azStatus := 0
@@ -180,11 +225,14 @@ func (s *Simulator) step() error {
 		s.status.ElVel = drag(s.status.ElVel)
 	}
 
+	s.status.AzPos = math.Mod(s.status.AzPos+s.status.AzVel*stepSize.Seconds()+360, 360)
+	s.status.ElPos = math.Mod(s.status.ElPos+s.status.ElVel*stepSize.Seconds()+360, 360)
+
 	s.status.StatusRegister = uint64(azStatus + (elStatus << 8))
 	return nil
 }
 
-func (s *Simulator) sendStatus(old *Status) error {
+func (s *Simulator) sendStatus(old *Status, cmd string) error {
 	var oldv reflect.Value
 	if old != nil {
 		oldv = reflect.ValueOf(*old)
@@ -198,7 +246,7 @@ func (s *Simulator) sendStatus(old *Status) error {
 		}
 		fv := v.Field(i)
 		value := fv.Interface()
-		if old != nil && reflect.DeepEqual(value, oldv.Field(i).Interface()) {
+		if (cmd != "" && cmd != tag) || (cmd == "" && old != nil && reflect.DeepEqual(value, oldv.Field(i).Interface())) {
 			continue
 		}
 		switch fv.Kind() {
@@ -220,6 +268,10 @@ func (s *Simulator) sendStatus(old *Status) error {
 					return err
 				}
 			}
+		case reflect.String:
+			if err := s.send("%s%s", tag, value); err != nil {
+				return err
+			}
 		default:
 			return fmt.Errorf("don't know how to send %s: %q (value %+v)", field.Name, tag, fv.Interface())
 		}
@@ -228,10 +280,10 @@ func (s *Simulator) sendStatus(old *Status) error {
 }
 
 func (s *Simulator) send(cmd string, fields ...interface{}) error {
-	cmd += "\n"
 	if len(fields) > 0 {
 		cmd = fmt.Sprintf(cmd, fields...)
 	}
-	log.Print(cmd)
-	return nil
+	log.Printf("sim->srv: %s", cmd)
+	_, err := fmt.Fprintf(s.conn, "%s\n", cmd)
+	return err
 }
