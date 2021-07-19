@@ -55,15 +55,23 @@
 	<tr><th>Connection</th><td><span ng-show="rci.status.Authorized">Authorized</span><span ng-show="!rci.status.Authorized">read-only <button ng-click="login()">Log In</button></span></td></tr>
 	<tr><th>Sequence Number</th><td>{{rci.status.SequenceNumber}}</td></tr>
 	<tr><th colspan="2">Status</th></tr>
-	<tr><th>Raw</th><td>{{rci.status.RawRegisters | hex}}</td></tr>
+	<tr ng-if="rci.status.RawRegisters != undefined"><th>Raw</th><td>{{rci.status.RawRegisters | hex}}</td></tr>
 	<tr><th>Diag</th><td>{{rci.status.Diag}}</td></tr>
-	<tr><th>Azimuth</th><td>
+	<tr ng-if="rci.status.AzPos != undefined"><th>Azimuth</th><td>
 	    <knob ng-model="rci.status.AzPos" unit="°"></knob><br />
-	    <knob ng-model="rci.status.AzVel" unit="°/s"></knob>
+	    <knob ng-if="rci.status.AzVel != undefined" ng-model="rci.status.AzVel" unit="°/s"></knob>
 	</td></tr>
-	<tr><th>Elevation</th><td>
+	<tr ng-if="rci.status.ElPos != undefined"><th>Elevation</th><td>
 	    <knob ng-model="rci.status.ElPos" unit="°"></knob><br />
-	    <knob ng-model="rci.status.ElVel" unit="°/s"></knob>
+	    <knob ng-if="rci.status.ElVel != undefined" ng-model="rci.status.ElVel" unit="°/s"></knob>
+	</td></tr>
+	<tr ng-if="rci.status.LhaPos != undefined"><th>LHA</th><td>
+	    <knob ng-model="rci.status.LhaPos" unit="°"></knob><br />
+	    <knob ng-if="rci.status.LhaVel != undefined" ng-model="rci.status.LhaVel" unit="°/s"></knob>
+	</td></tr>
+	<tr ng-if="rci.status.DecPos != undefined"><th>Declination</th><td>
+	    <knob ng-model="rci.status.DecPos" unit="°"></knob><br />
+	    <knob ng-if="rci.status.DecVel != undefined" ng-model="rci.status.DecVel" unit="°/s"></knob>
 	</td></tr>
 	<tr><th>In</th><td>{{rci.status.Status | bits}}</td></tr>
 	<tr><th>Mode</th><td>

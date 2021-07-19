@@ -18,6 +18,7 @@ type TransformerStatus struct {
 	Status
 	AzPos, ElPos                   float64
 	LhaPos, DecPos                 float64
+	LhaVel, DecVel                 float64
 	AzVel, ElVel                   float64
 	CommandAzPos, CommandElPos     float64
 	CommandAzFlags, CommandElFlags string
@@ -98,6 +99,7 @@ func hor2equ(az, el, phi float64) (float64, float64) {
 
 func NewTransformer(latitude float64, constructor func(cb StatusCallback) (Rotator, error), cb StatusCallback) (*Transformer, error) {
 	t := &Transformer{
+		latitude:     latitude,
 		origCallback: cb,
 	}
 	r, err := constructor(t.statusCallback)
@@ -120,7 +122,7 @@ func (t *Transformer) SetAzimuthPosition(az float64) {
 
 	lha, dec := hor2equ(az, el, t.latitude)
 
-	log.Printf("SetAzimuthPosition: (%3.2f, %3.2f) -> (%3.2f, %3.2f)", az, el, lha, dec)
+	log.Printf("SetAzimuthPosition: (%3.2f, %3.2f, %3.0f) -> (%3.2f, %3.2f)", az, el, t.latitude, lha, dec)
 
 	t.Rotator.SetAzimuthPosition(lha)
 	t.Rotator.SetElevationPosition(dec)
@@ -146,6 +148,7 @@ func (t *Transformer) SetElevationPosition(el float64) {
 
 func (t *Transformer) statusCallback(status Status) {
 	lha, dec := status.AzimuthPosition(), status.ElevationPosition()
+	lhavel, decvel := status.AzElVelocity()
 
 	az, el := equhor_deg(lha, dec, t.latitude)
 
@@ -165,6 +168,8 @@ func (t *Transformer) statusCallback(status Status) {
 		ElPos:          el,
 		LhaPos:         lha,
 		DecPos:         dec,
+		LhaVel:         lhavel,
+		DecVel:         decvel,
 		CommandAzFlags: flags,
 		CommandElFlags: flags,
 		CommandAzPos:   azcmd,

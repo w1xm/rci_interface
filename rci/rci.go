@@ -65,6 +65,10 @@ func (s Status) ElevationPosition() float64 {
 	return s.ElPos
 }
 
+func (s Status) AzElVelocity() (float64, float64) {
+	return s.AzVel, s.ElVel
+}
+
 func (s Status) AzimuthCommand() (string, float64) {
 	return s.CommandAzFlags, s.CommandAzPos
 }

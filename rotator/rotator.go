@@ -17,6 +17,7 @@ type StatusCallback func(status Status)
 type Status interface {
 	AzimuthPosition() float64
 	ElevationPosition() float64
+	AzElVelocity() (float64, float64)
 
 	AzimuthCommand() (string, float64)
 	ElevationCommand() (string, float64)
