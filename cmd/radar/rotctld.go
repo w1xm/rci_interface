@@ -167,6 +167,6 @@ Can get Info: N
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		log.Printf("reading from %v: %v", err)
+		log.Printf("reading from %v: %v", conn.RemoteAddr(), err)
 	}
 }
