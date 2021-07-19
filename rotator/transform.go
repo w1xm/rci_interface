@@ -110,6 +110,8 @@ func NewTransformer(latitude float64, constructor func(cb StatusCallback) (Rotat
 
 func (t *Transformer) SetAzimuthPosition(az float64) {
 	t.mu.Lock()
+	t.status.CommandAzFlags = "POSITION"
+	t.status.CommandAzPos = az
 	el := t.status.ElPos
 	if t.status.CommandElFlags == "POSITION" {
 		el = t.status.CommandElPos
@@ -130,7 +132,7 @@ func (t *Transformer) SetElevationPosition(el float64) {
 	t.status.CommandElPos = el
 	az := t.status.AzPos
 	if t.status.CommandAzFlags == "POSITION" {
-		el = t.status.CommandAzPos
+		az = t.status.CommandAzPos
 	}
 	t.mu.Unlock()
 
