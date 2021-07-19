@@ -19,6 +19,7 @@ var (
 	rotctldAddr   = flag.String("rotctld_addr", "127.0.0.1:4533", "address to listen for rotctld commands on")
 	passwordFile  = flag.String("password_file", "", "file containing passwords (one per line) to require on remote connections")
 	staticDir     = flag.String("static_dir", "static", "directory containing static files")
+	rotType       = flag.String("rotator_type", "simulator", "type of rotator")
 	serialPort    = flag.String("serial", "", "RCI serial port name")
 	latitude      = flag.Float64("latitude", 42.360326, "latitude of antenna")
 	longitude     = flag.Float64("longitude", -71.089324, "longitude of antenna")
@@ -68,7 +69,7 @@ func main() {
 	if *passwordFile != "" {
 		passwords = readLines(*passwordFile)
 	}
-	server, err := NewServer(ctx, *serialPort, passwords, *latitude, *longitude, place, *azOffset, *elOffset, *seqURL, *seqSerialPort, *seqBaud, *cpsSerialPort)
+	server, err := NewServer(ctx, *rotType, *serialPort, passwords, *latitude, *longitude, place, *azOffset, *elOffset, *seqURL, *seqSerialPort, *seqBaud, *cpsSerialPort)
 	if err != nil {
 		log.Fatal(err)
 	}

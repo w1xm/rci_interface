@@ -58,6 +58,8 @@ func (s *Simulator) parseInput(input string) error {
 		if len(parts) > 0 {
 			s.status.CommandElFlags = "VELOCITY"
 			status.ParseFloat(&s.status.CommandElVel, parts[0])
+			// Velocity commands are in mdeg/s
+			s.status.CommandElVel /= 1000
 			if cmd[1] == 'D' {
 				s.status.CommandElVel = -s.status.CommandElVel
 			}
@@ -73,6 +75,8 @@ func (s *Simulator) parseInput(input string) error {
 		if len(parts) > 0 {
 			s.status.CommandAzFlags = "VELOCITY"
 			status.ParseFloat(&s.status.CommandAzVel, parts[0])
+			// Velocity commands are in mdeg/s
+			s.status.CommandAzVel /= 1000
 			if cmd[1] == 'L' {
 				s.status.CommandAzVel = -s.status.CommandAzVel
 			}
@@ -96,6 +100,7 @@ const (
 	maxAccel = 30
 	// Maximum velocity in degrees/second
 	maxVel = 30
+	minVel = 0.1
 	// Acceleration due to drag when not driving
 	dragAccel = 30
 	// Discrete simulation step size
@@ -143,16 +148,18 @@ func (s *Simulator) reader() error {
 // posServo returns a target velocity for the given move
 func posServo(s, t float64) float64 {
 	// TODO: PID control to prevent overshoot
-	delta := math.Abs(t - s)
+	move := math.Remainder(t-s, 360)
+	delta := 2 * math.Abs(move)
 	if delta > maxVel {
 		delta = maxVel
 	}
-	if t < s {
+	if move < 0 {
 		delta = -delta
 	}
-	return s + delta
+	return delta
 }
 
+// velServo returns an actual velocity for the given current and target velocity
 func velServo(s, t float64) float64 {
 	delta := math.Abs(t - s)
 	if delta > maxAccel*stepSize.Seconds() {
@@ -162,6 +169,9 @@ func velServo(s, t float64) float64 {
 		delta = -delta
 	}
 	new := s + delta
+	if math.Abs(new) < minVel {
+		return 0
+	}
 	if new > maxVel {
 		return maxVel
 	} else if new < -maxVel {

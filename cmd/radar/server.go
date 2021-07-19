@@ -6,12 +6,14 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"reflect"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/pebbe/novas"
 	"github.com/w1xm/rci_interface/cps20"
+	"github.com/w1xm/rci_interface/easycomm"
 	"github.com/w1xm/rci_interface/rci"
 	"github.com/w1xm/rci_interface/rotator"
 	"github.com/w1xm/rci_interface/sequencer"
@@ -37,6 +39,33 @@ type Status struct {
 	Authorized          bool
 	AuthorizedClients   []AuthorizedClient
 	Latitude, Longitude float64
+}
+
+func (s Status) MarshalJSON() ([]byte, error) {
+	out := make(map[string]interface{})
+
+	val := reflect.Indirect(reflect.ValueOf(s))
+
+	var add func(reflect.Value)
+	add = func(val reflect.Value) {
+		if val.Kind() == reflect.Interface {
+			val = val.Elem()
+		}
+		typ := val.Type()
+		for i := 0; i < typ.NumField(); i++ {
+			field := typ.Field(i)
+			name := field.Name
+
+			if field.Anonymous {
+				add(val.Field(i))
+			} else {
+				out[name] = val.Field(i).Interface()
+			}
+		}
+	}
+	add(val)
+
+	return json.Marshal(out)
 }
 
 func (s Status) Clone() Status {
@@ -75,7 +104,7 @@ type Server struct {
 	status     Status
 }
 
-func NewServer(ctx context.Context, port string, passwords []string, latitude, longitude float64, place *novas.Place, azOffset, elOffset float64, sequencerURL string, sequencerPort string, sequencerBaud int, cps20Port string) (*Server, error) {
+func NewServer(ctx context.Context, rotType, port string, passwords []string, latitude, longitude float64, place *novas.Place, azOffset, elOffset float64, sequencerURL string, sequencerPort string, sequencerBaud int, cps20Port string) (*Server, error) {
 	s := &Server{
 		status: Status{
 			Latitude:  latitude,
@@ -86,9 +115,18 @@ func NewServer(ctx context.Context, port string, passwords []string, latitude, l
 	}
 	s.statusCond = sync.NewCond(s.statusMu.RLocker())
 	var r rotator.Rotator
-	r, err := rci.ConnectOffset(ctx, port, s.statusCallback, azOffset, elOffset)
-	if err != nil {
-		return nil, err
+	var err error
+	switch rotType {
+	case "rci":
+		r, err = rci.ConnectOffset(ctx, port, s.statusCallback, azOffset, elOffset)
+		if err != nil {
+			return nil, err
+		}
+	case "simulator":
+		r, err = easycomm.ConnectSimulator(ctx, s.statusCallback)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if r, ok := r.(rotator.Shutdowner); ok {
 		// "Elevation overvelocity" is always okay (ugh).

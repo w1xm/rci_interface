@@ -4,6 +4,8 @@ import (
 	"errors"
 	"strconv"
 	"strings"
+
+	"github.com/w1xm/rci_interface/rotator"
 )
 
 type Status struct {
@@ -67,6 +69,18 @@ type Status struct {
 	Moving bool
 
 	CommandAzFlags, CommandElFlags string
+}
+
+func (s Status) Clone() rotator.Status {
+	return s
+}
+
+func (s Status) AzimuthPosition() float64 {
+	return s.AzPos
+}
+
+func (s Status) ElevationPosition() float64 {
+	return s.ElPos
 }
 
 func ParseFloat(dest *float64, input string) error {

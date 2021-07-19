@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net"
 	"strconv"
 	"strings"
@@ -14,10 +15,10 @@ import (
 	"time"
 
 	"github.com/w1xm/rci_interface/easycomm/internal/status"
+	"github.com/w1xm/rci_interface/easycomm/simulator"
+	"github.com/w1xm/rci_interface/rotator"
 	"golang.org/x/sync/errgroup"
 )
-
-type StatusCallback func(status Status)
 
 // Rotator implements support for an EasyComm III rotator
 type Rotator struct {
@@ -26,7 +27,7 @@ type Rotator struct {
 	supportsEnc bool
 	supportsVel bool
 
-	statusCallback StatusCallback
+	statusCallback rotator.StatusCallback
 	mu             sync.Mutex
 	status         Status
 }
@@ -36,9 +37,17 @@ type Rotator struct {
 
 type Status = status.Status
 
-func ConnectTCP(ctx context.Context, port string, statusCallback StatusCallback) (*Rotator, error) {
+func ConnectTCP(ctx context.Context, port string, statusCallback rotator.StatusCallback) (*Rotator, error) {
 	r := &Rotator{statusCallback: statusCallback}
 	go r.reconnectLoop(ctx, port)
+	return r, nil
+}
+
+func ConnectSimulator(ctx context.Context, statusCallback rotator.StatusCallback) (*Rotator, error) {
+	sim, conn := simulator.New()
+	r := &Rotator{statusCallback: statusCallback, conn: conn}
+	go r.watch(ctx)
+	go sim.Run(ctx)
 	return r, nil
 }
 
@@ -279,12 +288,16 @@ func (r *Rotator) Stop() {
 	r.send("SA SE")
 }
 
+func posAngle(x float64) float64 {
+	return math.Mod(math.Remainder(x, 360)+360, 360)
+}
+
 func (r *Rotator) SetAzimuthPosition(angle float64) {
-	r.send(fmt.Sprintf("AZ%03.1f", angle))
+	r.send(fmt.Sprintf("AZ%03.1f", posAngle(angle)))
 }
 
 func (r *Rotator) SetElevationPosition(angle float64) {
-	r.send(fmt.Sprintf("EL%03.1f", angle))
+	r.send(fmt.Sprintf("EL%03.1f", posAngle(angle)))
 }
 
 func (r *Rotator) SetAzimuthVelocity(angle float64) {
