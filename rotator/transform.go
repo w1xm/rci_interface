@@ -1,22 +1,43 @@
 package rotator
 
-import "math"
+import (
+	"log"
+	"math"
+	"sync"
+)
 
 type Transformer struct {
 	Rotator
 	latitude     float64
 	origCallback StatusCallback
+	mu           sync.Mutex
+	status       TransformerStatus
 }
 
 type TransformerStatus struct {
 	Status
-	AzPos, ElPos  float64
-	RAPos, DecPos float64
-	AzVel, ElVel  float64
+	AzPos, ElPos                   float64
+	LhaPos, DecPos                 float64
+	AzVel, ElVel                   float64
+	CommandAzPos, CommandElPos     float64
+	CommandAzFlags, CommandElFlags string
+}
+
+func (ts TransformerStatus) Clone() Status {
+	ts.Status = ts.Status.Clone()
+	return ts
+}
+
+func (ts TransformerStatus) AzimuthPosition() float64 {
+	return ts.AzPos
+}
+
+func (ts TransformerStatus) ElevationPosition() float64 {
+	return ts.AzPos
 }
 
 // equhor converts between azimuth/altitude and hour-angle/declination.
-// Phi is the observer's latitude
+// phi is the observer's latitude
 // Arguments are in radians
 // Algorithm from https://metacpan.org/dist/Astro-Montenbruck/source/lib/Astro/Montenbruck/CoCo.pm
 func equhor_rad(x, y, phi float64) (float64, float64) {
@@ -48,20 +69,107 @@ func equhor_deg(x, y, phi float64) (float64, float64) {
 	return rad2deg(p), rad2deg(q)
 }
 
-func NewTransformer() *Transformer {
-	return &Transformer{}
+// func hor2equ(az, el, phi float64) (float64, float64) {
+// 	h, dec := equhor_deg(az+180, el, phi)
+// 	return math.Mod(360-h, 360), dec
+// }
+
+func hor2equ(az, el, phi float64) (float64, float64) {
+	sinA := math.Sin(deg2rad(az))
+	cosA := math.Cos(deg2rad(az))
+	sinE := math.Sin(deg2rad(el))
+	cosE := math.Cos(deg2rad(el))
+	sinL := math.Sin(deg2rad(phi))
+	cosL := math.Cos(deg2rad(phi))
+
+	x := -cosA*cosE*sinL + sinE*cosL
+	y := -sinA * cosE
+	z := cosA*cosE*cosL + sinE*sinL
+
+	r := math.Sqrt(x*x + y*y)
+	ha := 0.0
+	if r != 0 {
+		ha = math.Atan2(y, x)
+	}
+	dec := math.Atan2(z, r)
+
+	return rad2deg(ha), rad2deg(dec)
+}
+
+func NewTransformer(latitude float64, constructor func(cb StatusCallback) (Rotator, error), cb StatusCallback) (*Transformer, error) {
+	t := &Transformer{
+		origCallback: cb,
+	}
+	r, err := constructor(t.statusCallback)
+	if err != nil {
+		return nil, err
+	}
+	t.Rotator = r
+	return t, nil
+}
+
+func (t *Transformer) SetAzimuthPosition(az float64) {
+	t.mu.Lock()
+	el := t.status.ElPos
+	if t.status.CommandElFlags == "POSITION" {
+		el = t.status.CommandElPos
+	}
+	t.mu.Unlock()
+
+	lha, dec := hor2equ(az, el, t.latitude)
+
+	log.Printf("SetAzimuthPosition: (%3.2f, %3.2f) -> (%3.2f, %3.2f)", az, el, lha, dec)
+
+	t.Rotator.SetAzimuthPosition(lha)
+	t.Rotator.SetElevationPosition(dec)
+}
+
+func (t *Transformer) SetElevationPosition(el float64) {
+	t.mu.Lock()
+	t.status.CommandElFlags = "POSITION"
+	t.status.CommandElPos = el
+	az := t.status.AzPos
+	if t.status.CommandAzFlags == "POSITION" {
+		el = t.status.CommandAzPos
+	}
+	t.mu.Unlock()
+
+	lha, dec := hor2equ(az, el, t.latitude)
+
+	log.Printf("SetElevationPosition: (%3.2f, %3.2f) -> (%3.2f, %3.2f)", az, el, lha, dec)
+
+	t.Rotator.SetAzimuthPosition(lha)
+	t.Rotator.SetElevationPosition(dec)
 }
 
 func (t *Transformer) statusCallback(status Status) {
-	ra, dec := status.AzimuthPosition(), status.ElevationPosition()
+	lha, dec := status.AzimuthPosition(), status.ElevationPosition()
 
-	az, el := equhor_deg(ra, dec, t.latitude)
+	az, el := equhor_deg(lha, dec, t.latitude)
 
-	t.origCallback(TransformerStatus{
-		Status: status,
-		AzPos:  az,
-		ElPos:  el,
-		RAPos:  ra,
-		DecPos: dec,
-	})
+	lhaflags, lhacmd := status.AzimuthCommand()
+	decflags, deccmd := status.ElevationCommand()
+
+	flags := "NONE"
+	if lhaflags == "POSITION" || decflags == "POSITION" {
+		flags = "POSITION"
+	}
+
+	azcmd, elcmd := equhor_deg(lhacmd, deccmd, t.latitude)
+
+	ts := TransformerStatus{
+		Status:         status,
+		AzPos:          az,
+		ElPos:          el,
+		LhaPos:         lha,
+		DecPos:         dec,
+		CommandAzFlags: flags,
+		CommandElFlags: flags,
+		CommandAzPos:   azcmd,
+		CommandElPos:   elcmd,
+	}
+	t.mu.Lock()
+	t.status = ts
+	t.mu.Unlock()
+	t.origCallback(ts)
 }
