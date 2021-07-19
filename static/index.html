@@ -73,10 +73,12 @@
 	    <knob ng-model="rci.status.DecPos" unit="°"></knob><br />
 	    <knob ng-if="rci.status.DecVel != undefined" ng-model="rci.status.DecVel" unit="°/s"></knob>
 	</td></tr>
-	<tr><th>In</th><td>{{rci.status.Status | bits}}</td></tr>
+	<tr ng-if="rci.status.Status != undefined"><th>In</th><td>{{rci.status.Status | bits}}</td></tr>
 	<tr><th>Mode</th><td>
 	      <div ng-if="rci.status.LocalMode">Local Mode</div>
 	      <div ng-if="rci.status.MaintenanceMode">Maintenance Mode</div>
+	      <div ng-if="rci.status.AzimuthCCW">Azimuth CCW</div>
+	      <div ng-if="rci.status.AzimuthCW">Azimuth CW</div>
 	      <div ng-if="rci.status.ElevationLower">Elevation Lower</div>
 	      <div ng-if="rci.status.ElevationUpper">Elevation Upper</div>
 	      <div ng-if="rci.status.Simulator">Simulator</div>
@@ -87,7 +89,7 @@
 	      <div ng-if="rci.status.MovingDisabled">Moving Disabled</div>
 	      <div ng-if="rci.status.ShutdownError">Shutdown {{rci.status.ShutdownError|shutdown}}<button ng-click="rci.exitShutdown()">Exit Shutdown</button></div>
 	</td></tr>
-	<tr><th>Amplidynes</th><td>
+	<tr ng-if="rci.status.Amplidynes != undefined"><th>Amplidynes</th><td>
 	    <div ng-if="rci.status.Amplidynes.AzActive">Azimuth Active</div>
 	    <div ng-if="rci.status.Amplidynes.ElActive">Elevation Active</div>
 	    <div ng-if="rci.status.Amplidynes.AmplidynesActive">Amplidynes Okay</div>

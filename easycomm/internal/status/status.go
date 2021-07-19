@@ -69,6 +69,8 @@ type Status struct {
 
 	Moving bool
 
+	Simulator bool
+
 	CommandAzFlags, CommandElFlags string
 }
 

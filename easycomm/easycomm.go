@@ -191,6 +191,7 @@ func (r *Rotator) parseInput(input string) error {
 		}
 	case input[:2] == "VE": // VEaaaaaa
 		r.status.Version = input[2:]
+		r.status.Simulator = r.status.Version == "sim"
 	case input[:2] == "IP": // IPn,n
 		parts := strings.Split(input[2:], ",")
 		i, err := strconv.Atoi(parts[0])
