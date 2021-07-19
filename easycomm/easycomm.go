@@ -209,6 +209,7 @@ func (r *Rotator) parseInput(input string) error {
 				r.status.AzimuthCCW = valueInt&1 == 1
 				r.status.AzimuthCW = valueInt&2 == 2
 			case 2:
+				r.status.ElevationLimit = uint64(valueInt)
 				r.status.ElevationLower = valueInt&1 == 1
 				r.status.ElevationUpper = valueInt&2 == 2
 			case 5:

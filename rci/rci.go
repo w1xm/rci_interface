@@ -65,6 +65,14 @@ func (s Status) ElevationPosition() float64 {
 	return s.ElPos
 }
 
+func (s Status) AzimuthCommand() (string, float64) {
+	return s.CommandAzFlags, s.CommandAzPos
+}
+
+func (s Status) ElevationCommand() (string, float64) {
+	return s.CommandElFlags, s.CommandElPos
+}
+
 func regToSigned(reg uint16) float64 {
 	return 360 * float64(int16(reg)) / 65536
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"math"
 	"net"
 	"net/http"
 	"reflect"
@@ -56,10 +57,17 @@ func (s Status) MarshalJSON() ([]byte, error) {
 			field := typ.Field(i)
 			name := field.Name
 
+			if !field.Anonymous {
+				if _, ok := out[name]; !ok {
+					out[name] = val.Field(i).Interface()
+				}
+			}
+		}
+		for i := 0; i < typ.NumField(); i++ {
+			field := typ.Field(i)
+
 			if field.Anonymous {
 				add(val.Field(i))
-			} else {
-				out[name] = val.Field(i).Interface()
 			}
 		}
 	}
@@ -366,10 +374,10 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			case "set_azimuth_position":
 				s.track(0)
-				s.r.SetAzimuthPosition(msg.Position)
+				s.r.SetAzimuthPosition(clampAngle(msg.Position))
 			case "set_elevation_position":
 				s.track(0)
-				s.r.SetElevationPosition(msg.Position)
+				s.r.SetElevationPosition(clampAngle(msg.Position))
 			case "set_azimuth_velocity":
 				s.track(0)
 				s.r.SetAzimuthVelocity(msg.Velocity)
@@ -564,4 +572,8 @@ func (s *Server) setAmplidynesEnabled(enabled bool) {
 		}
 		s.cps20.SetAmplidynesEnabled(false)
 	}
+}
+
+func clampAngle(x float64) float64 {
+	return math.Mod(math.Mod(x, 360)+360, 360)
 }

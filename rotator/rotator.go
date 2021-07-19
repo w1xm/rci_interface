@@ -18,6 +18,9 @@ type Status interface {
 	AzimuthPosition() float64
 	ElevationPosition() float64
 
+	AzimuthCommand() (string, float64)
+	ElevationCommand() (string, float64)
+
 	Clone() Status
 }
 

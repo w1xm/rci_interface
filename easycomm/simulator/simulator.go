@@ -44,6 +44,12 @@ func (s *Simulator) parseInput(input string) error {
 		parts = nil
 	}
 	switch cmd {
+	case "SA":
+		s.status.CommandAzFlags = "NONE"
+		return nil
+	case "SE":
+		s.status.CommandElFlags = "NONE"
+		return nil
 	case "AZ":
 		if len(parts) > 0 {
 			s.status.CommandAzFlags = "POSITION"
@@ -186,7 +192,7 @@ func drag(s float64) float64 {
 	if a < 0 {
 		a = 0
 	}
-	if a < 0 {
+	if s < 0 {
 		return -a
 	}
 	return a
@@ -238,6 +244,16 @@ func (s *Simulator) step() (err error) {
 
 	s.status.AzPos = math.Mod(s.status.AzPos+s.status.AzVel*stepSize.Seconds()+360, 360)
 	s.status.ElPos = math.Mod(s.status.ElPos+s.status.ElVel*stepSize.Seconds()+360, 360)
+	s.status.ElevationLimit = 0
+	if s.status.ElPos > 180 {
+		s.status.ElPos = 0
+		s.status.ElVel = 0
+		s.status.ElevationLimit = 1
+	} else if s.status.ElPos > 90 {
+		s.status.ElPos = 90
+		s.status.ElVel = 0
+		s.status.ElevationLimit = 2
+	}
 
 	s.status.StatusRegister = uint64(azStatus + (elStatus << 8))
 	return nil

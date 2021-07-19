@@ -26,6 +26,7 @@ type Status struct {
 	// IP1 returns Az endstop
 	AzimuthCCW, AzimuthCW bool
 	// IP2 returns El endstop
+	ElevationLimit uint64 `report:"IP2,"`
 	ElevationLower, ElevationUpper bool
 
 	// IP3 returns Az position (redundant)
@@ -81,6 +82,14 @@ func (s Status) AzimuthPosition() float64 {
 
 func (s Status) ElevationPosition() float64 {
 	return s.ElPos
+}
+
+func (s Status) AzimuthCommand() (string, float64) {
+	return s.CommandAzFlags, s.CommandAzPos
+}
+
+func (s Status) ElevationCommand() (string, float64) {
+	return s.CommandElFlags, s.CommandElPos
 }
 
 func ParseFloat(dest *float64, input string) error {
