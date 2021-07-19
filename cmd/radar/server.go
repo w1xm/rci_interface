@@ -32,10 +32,9 @@ type Status struct {
 	rotator.Status
 	LastMoveTime        time.Time
 	Sequencer           sequencer.Status
-	Amplidynes          cps20.Status
+	Amplidynes          *cps20.Status
 	CommandTrackingBody int
 	Bodies              []string
-	OffsetAz, OffsetEl  float64
 	// Authorized is true if the current connection is allowed to mutate state.
 	Authorized          bool
 	AuthorizedClients   []AuthorizedClient
@@ -59,7 +58,12 @@ func (s Status) MarshalJSON() ([]byte, error) {
 
 			if !field.Anonymous {
 				if _, ok := out[name]; !ok {
-					out[name] = val.Field(i).Interface()
+					v := val.Field(i)
+					if !(v.Kind() == reflect.Ptr && v.IsNil()) {
+						out[name] = v.Interface()
+					} else {
+						out[name] = nil
+					}
 				}
 			}
 		}
@@ -67,11 +71,18 @@ func (s Status) MarshalJSON() ([]byte, error) {
 			field := typ.Field(i)
 
 			if field.Anonymous {
-				add(val.Field(i))
+				v := val.Field(i)
+				add(v)
 			}
 		}
 	}
 	add(val)
+
+	for k, v := range out {
+		if v == nil {
+			delete(out, k)
+		}
+	}
 
 	return json.Marshal(out)
 }
@@ -157,9 +168,12 @@ func NewServer(ctx context.Context, rotType, port string, passwords []string, la
 	if err != nil {
 		return nil, err
 	}
-	s.cps20, err = cps20.Connect(ctx, cps20Port, 19200, s.cps20StatusCallback)
-	if err != nil {
-		return nil, err
+	if cps20Port != "" {
+		s.status.Amplidynes = &cps20.Status{}
+		s.cps20, err = cps20.Connect(ctx, cps20Port, 19200, s.cps20StatusCallback)
+		if err != nil {
+			return nil, err
+		}
 	}
 	s.bodies = []*novas.Body{
 		novas.Sun(),
@@ -260,9 +274,11 @@ func (s *Server) trackLoop(ctx context.Context) {
 		s.mu.Lock()
 		s.statusMu.RLock()
 		command := s.status.CommandTrackingBody
-		if command == 0 && time.Since(s.status.LastMoveTime) > spindownDelay && (s.status.Amplidynes.CommandAzEnabled || s.status.Amplidynes.CommandElEnabled) {
-			stopAmplidynes = true
-			// N minutes after last movement command, stop the amplidynes.
+		if s.cps20 != nil {
+			if command == 0 && time.Since(s.status.LastMoveTime) > spindownDelay && (s.status.Amplidynes.CommandAzEnabled || s.status.Amplidynes.CommandElEnabled) {
+				stopAmplidynes = true
+				// N minutes after last movement command, stop the amplidynes.
+			}
 		}
 		s.statusMu.RUnlock()
 		if stopAmplidynes {
@@ -404,18 +420,12 @@ func (s *Server) StatusSocketHandler(w http.ResponseWriter, r *http.Request) {
 					r.ExitShutdown()
 				}
 			case "set_azimuth_offset":
-				s.statusMu.Lock()
-				s.status.OffsetAz = msg.Position
-				s.statusMu.Unlock()
 				if r, ok := s.r.(rotator.Offsetter); ok {
-					r.SetAzimuthOffset(s.status.OffsetAz)
+					r.SetAzimuthOffset(msg.Position)
 				}
 			case "set_elevation_offset":
-				s.statusMu.Lock()
-				s.status.OffsetEl = msg.Position
-				s.statusMu.Unlock()
 				if r, ok := s.r.(rotator.Offsetter); ok {
-					r.SetElevationOffset(s.status.OffsetEl)
+					r.SetElevationOffset(msg.Position)
 				}
 			case "add_star":
 				s.statusMu.Lock()
@@ -561,11 +571,14 @@ func (s *Server) cps20StatusCallback(status cps20.Status) {
 	}
 	s.statusMu.Lock()
 	defer s.statusMu.Unlock()
-	s.status.Amplidynes = status
+	s.status.Amplidynes = &status
 	s.statusCond.Broadcast()
 }
 
 func (s *Server) setAmplidynesEnabled(enabled bool) {
+	if s.cps20 == nil {
+		return
+	}
 	if enabled {
 		s.statusMu.Lock()
 		s.status.LastMoveTime = time.Now()

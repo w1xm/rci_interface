@@ -99,9 +99,9 @@
 	</td></tr>
 
 	<tr><th colspan="2">Command</th></tr>
-	<tr><th>Raw</th><td>{{rci.status.WriteRegisters | hex}}</td></tr>
+	<tr ng-if="rci.status.WriteRegisters != undefined"><th>Raw</th><td>{{rci.status.WriteRegisters | hex}}</td></tr>
 	<tr><th>Diag</th><td>{{rci.status.CommandDiag}}</td></tr>
-	<tr><th>Amplidynes</th><td>
+	<tr ng-if="rci.status.Amplidynes != undefined"><th>Amplidynes</th><td>
 	    <div ng-if="rci.status.Amplidynes.CommandAzEnabled">Azimuth Enabled</div>
 	    <div ng-if="rci.status.Amplidynes.CommandElEnabled">Elevation Enabled</div>
 	    <div>{{rci.status.Amplidynes.CommandSpinupDelay}} second spinup delay</div>
@@ -127,10 +127,10 @@
 	      <label><input name="band{{$index}}" type="radio" ng-checked="{{!band.CommandTX && !band.CommandRX}}" ng-click="rci.setBandTx($index, false); rci.setBandRx($index, false)" />Ref</label>
 	    </div>
 	</td></tr>
-	<tr><th>Azimuth Offset</th><td>
+	<tr ng-if="rci.status.OffsetAz != nil"><th>Azimuth Offset</th><td>
 	    <knob ng-model="rci.status.OffsetAz" unit="°" writable="true" min="-360" max="360" wrap="true" ng-change="rci.setAzimuthOffset(rci.status.OffsetAz)"></knob>
 	</td></tr>
-	<tr><th>Elevation Offset</th><td>
+	<tr ng-if="rci.status.OffsetEl != nil"><th>Elevation Offset</th><td>
 	    <knob ng-model="rci.status.OffsetEl" unit="°" writable="true" min="-360" max="360" wrap="true" ng-change="rci.setElevationOffset(rci.status.OffsetEl)"></knob>
 	</td></tr>
       </table>
