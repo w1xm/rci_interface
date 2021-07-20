@@ -97,6 +97,14 @@ func hor2equ(az, el, phi float64) (float64, float64) {
 	return rad2deg(ha), rad2deg(dec)
 }
 
+func velequhor_deg(x, y, dx, dy, phi float64) (float64, float64) {
+	p, q := hor2equ(x, y, phi)
+	x2 := x + dx
+	y2 := y + dy
+	p2, q2 := hor2equ(x2, y2, phi)
+	return math.Remainder(p2-p, 360), math.Remainder(q2-q, 360)
+}
+
 func NewTransformer(latitude float64, constructor func(cb StatusCallback) (Rotator, error), cb StatusCallback) (*Transformer, error) {
 	t := &Transformer{
 		latitude:     latitude,
@@ -162,10 +170,14 @@ func (t *Transformer) statusCallback(status Status) {
 
 	azcmd, elcmd := equhor_deg(lhacmd, deccmd, t.latitude)
 
+	azvel, elvel := velequhor_deg(lha, dec, lhavel, decvel, t.latitude)
+
 	ts := TransformerStatus{
 		Status:         status,
 		AzPos:          az,
 		ElPos:          el,
+		AzVel:          azvel,
+		ElVel:          elvel,
 		LhaPos:         lha,
 		DecPos:         dec,
 		LhaVel:         lhavel,
