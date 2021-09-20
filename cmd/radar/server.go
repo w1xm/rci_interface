@@ -154,6 +154,14 @@ func NewServer(ctx context.Context, rotType, port string, passwords []string, la
 		if err != nil {
 			return nil, err
 		}
+	case "jlab":
+		r, err = rotator.NewTransformer(latitude, func(cb rotator.StatusCallback) (rotator.Rotator, error) {
+			r, err := easycomm.ConnectTCP(ctx, port, cb)
+			return r, err
+		}, s.statusCallback)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if r, ok := r.(rotator.Shutdowner); ok {
 		// "Elevation overvelocity" is always okay (ugh).
